@@ -75,6 +75,20 @@ def get_sensor_data():
     }
 
 
+@app.get("/machines/{machine_id}/sensor-data")
+def get_sensor_data_by_machine(machine_id: str):
+    filtered_data = [
+        item for item in sensor_data_store
+        if item["machine_id"] == machine_id
+    ]
+
+    return {
+        "machine_id": machine_id,
+        "count": len(filtered_data),
+        "items": filtered_data
+    }
+
+
 @app.post("/prediction", response_model=PredictionResult)
 def predict(sensor_data: SensorData):
     result = calculate_risk(sensor_data)
