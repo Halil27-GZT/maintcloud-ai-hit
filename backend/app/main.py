@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from fastapi import FastAPI
 from app.models import SensorData, PredictionResult
 from app.scoring import calculate_risk
@@ -33,7 +33,7 @@ def root():
 def health():
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.now(UTC)  # ✅ FIXED
     }
 
 
