@@ -4,6 +4,7 @@ __pycache__/
 
 # Virtual Environment
 venv/
+backend/venv/
 
 # VS Code
 .vscode/
