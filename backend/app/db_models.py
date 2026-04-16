@@ -6,6 +6,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
 
+class MachineDB(Base):
+    __tablename__ = "machines"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    type: Mapped[str] = mapped_column(String, nullable=False)
+
+
 class SensorDataDB(Base):
     __tablename__ = "sensor_data"
 
@@ -20,3 +28,14 @@ class SensorDataDB(Base):
     status: Mapped[str] = mapped_column(String, nullable=False)
     message: Mapped[str] = mapped_column(String, nullable=False)
     recommendation: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class MaintenanceRecordDB(Base):
+    __tablename__ = "maintenance_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    machine_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    technician: Mapped[str] = mapped_column(String, nullable=False)
+    performed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
