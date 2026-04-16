@@ -1,7 +1,18 @@
+import os
+
 from fastapi.testclient import TestClient
+
+os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+
+from app.database import Base, engine
 from app.main import app
 
 client = TestClient(app)
+
+
+def setup_function():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
 
 def valid_payload():
@@ -11,7 +22,7 @@ def valid_payload():
         "vibration": 6.5,
         "runtime_hours": 3200,
         "pressure": 2.8,
-        "timestamp": "2026-04-12T10:00:00"
+        "timestamp": "2026-04-12T10:00:00",
     }
 
 
@@ -80,7 +91,7 @@ def test_get_sensor_data():
     assert "count" in data
     assert "items" in data
     assert isinstance(data["items"], list)
-    assert data["count"] >= 1
+    assert data["count"] == 1
 
 
 def test_get_machine_sensor_data():
@@ -94,3 +105,4 @@ def test_get_machine_sensor_data():
     assert "count" in data
     assert "items" in data
     assert isinstance(data["items"], list)
+    assert data["count"] == 1
