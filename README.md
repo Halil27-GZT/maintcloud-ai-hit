@@ -53,3 +53,28 @@ maintcloud-ai-hit/
 ├── .gitignore
 ├── README.md
 └── requirements.txt
+```
+
+## Start mit Docker
+
+Voraussetzung: Docker Desktop lÃ¤uft lokal.
+
+Projekt starten:
+
+```bash
+docker compose up --build
+```
+
+Danach ist die API unter `http://localhost:8000` erreichbar.
+
+NÃ¼tzliche Befehle:
+
+```bash
+docker compose down
+docker compose logs -f backend
+```
+
+Persistenz:
+
+- Die SQLite-Datenbank wird im Docker-Volume `maintcloud_data` gespeichert.
+- Im Container wird `DATABASE_URL=sqlite:////data/maintcloud.db` verwendet.

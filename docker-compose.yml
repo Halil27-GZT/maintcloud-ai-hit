@@ -1,0 +1,29 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: maintcloud-backend
+    environment:
+      DATABASE_URL: sqlite:////data/maintcloud.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - maintcloud_data:/data
+    restart: unless-stopped
+  backend-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    profiles:
+      - test
+    container_name: maintcloud-backend-test
+    working_dir: /app/backend
+    environment:
+      DATABASE_URL: sqlite:///./test.db
+    command: ["python", "-m", "pytest"]
+
+volumes:
+  maintcloud_data:
