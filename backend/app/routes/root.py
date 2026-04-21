@@ -1,10 +1,12 @@
 from fastapi import APIRouter
 
+from app.models import RootResponse
+
 
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("/", response_model=RootResponse)
 def root():
     return {
         "project": "MaintCloud AI",

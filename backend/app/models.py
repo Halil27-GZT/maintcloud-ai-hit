@@ -3,6 +3,21 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class ErrorResponse(BaseModel):
+    detail: str
+
+
+class RootResponse(BaseModel):
+    project: str
+    brand: str
+    status: str
+
+
+class HealthResponse(BaseModel):
+    status: str
+    timestamp: datetime
+
+
 class MachineBase(BaseModel):
     id: str
     name: str
@@ -11,6 +26,11 @@ class MachineBase(BaseModel):
 
 class MachineCreate(MachineBase):
     pass
+
+
+class MachineUpdate(BaseModel):
+    name: str
+    type: str
 
 
 class MachineResponse(MachineBase):
@@ -26,6 +46,10 @@ class MaintenanceRecordBase(BaseModel):
 
 
 class MaintenanceRecordCreate(MaintenanceRecordBase):
+    pass
+
+
+class MaintenanceRecordUpdate(MaintenanceRecordBase):
     pass
 
 
@@ -56,6 +80,11 @@ class SensorDataRecord(SensorData):
     status: str
     message: str
     recommendation: str
+
+
+class SensorDataCreateResponse(BaseModel):
+    message: str
+    data: SensorDataRecord
 
 
 class SensorDataListResponse(BaseModel):

@@ -95,6 +95,31 @@ def test_post_machine():
     assert data["type"] == "Cutter"
 
 
+def test_put_machine():
+    response = client.put(
+        "/machines/M-1001",
+        json={"name": "Hydraulic Press X", "type": "Press Line"},
+    )
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["id"] == "M-1001"
+    assert data["name"] == "Hydraulic Press X"
+    assert data["type"] == "Press Line"
+
+
+def test_delete_machine_removes_related_data():
+    client.post("/maintenance-records", json=valid_maintenance_payload())
+    client.post("/sensor-data", json=valid_payload())
+
+    response = client.delete("/machines/M-1001")
+    assert response.status_code == 204
+
+    assert client.get("/machines/M-1001").status_code == 404
+    assert client.get("/machines/M-1001/maintenance-records").json()["count"] == 0
+    assert client.get("/machines/M-1001/sensor-data").json()["count"] == 0
+
+
 def test_post_prediction():
     response = client.post("/prediction", json=valid_payload())
     assert response.status_code == 200
@@ -128,6 +153,43 @@ def test_post_maintenance_record():
     assert data["title"] == "Oil Change"
     assert data["technician"] == "Halil Ibrahim"
     assert "id" in data
+
+
+def test_put_maintenance_record():
+    create_response = client.post(
+        "/maintenance-records", json=valid_maintenance_payload()
+    )
+    record_id = create_response.json()["id"]
+
+    response = client.put(
+        f"/maintenance-records/{record_id}",
+        json={
+            "machine_id": "M-1001",
+            "title": "Filter Change",
+            "description": "Replaced air filter and cleaned housing",
+            "technician": "Halil Ibrahim",
+            "performed_at": "2026-04-17T08:15:00",
+        },
+    )
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["id"] == record_id
+    assert data["title"] == "Filter Change"
+    assert data["description"] == "Replaced air filter and cleaned housing"
+
+
+def test_delete_maintenance_record():
+    create_response = client.post(
+        "/maintenance-records", json=valid_maintenance_payload()
+    )
+    record_id = create_response.json()["id"]
+
+    response = client.delete(f"/maintenance-records/{record_id}")
+    assert response.status_code == 204
+
+    data = client.get("/maintenance-records").json()
+    assert data["count"] == 0
 
 
 def test_get_maintenance_records():

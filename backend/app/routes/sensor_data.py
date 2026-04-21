@@ -5,6 +5,7 @@ from app.dependencies import get_db
 from app.models import (
     MachineSensorDataListResponse,
     SensorData,
+    SensorDataCreateResponse,
     SensorDataListResponse,
 )
 from app.services.sensor_data_service import (
@@ -17,7 +18,7 @@ from app.services.sensor_data_service import (
 router = APIRouter()
 
 
-@router.post("/sensor-data")
+@router.post("/sensor-data", response_model=SensorDataCreateResponse)
 def add_sensor_data(sensor_data: SensorData, db: Session = Depends(get_db)):
     entry = create_sensor_data(db, sensor_data)
 

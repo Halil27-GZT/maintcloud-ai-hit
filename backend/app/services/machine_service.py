@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.db_models import MachineDB
-from app.models import MachineCreate, MachineResponse
+from app.db_models import MachineDB, MaintenanceRecordDB, SensorDataDB
+from app.models import MachineCreate, MachineResponse, MachineUpdate
 
 
 DEFAULT_MACHINES = [
@@ -45,3 +45,31 @@ def create_machine(db: Session, machine_data: MachineCreate) -> MachineResponse:
     db.commit()
     db.refresh(machine)
     return serialize_machine(machine)
+
+
+def update_machine(
+    db: Session, machine_id: str, machine_data: MachineUpdate
+) -> MachineResponse | None:
+    machine = db.get(MachineDB, machine_id)
+    if machine is None:
+        return None
+
+    machine.name = machine_data.name
+    machine.type = machine_data.type
+    db.commit()
+    db.refresh(machine)
+    return serialize_machine(machine)
+
+
+def delete_machine(db: Session, machine_id: str) -> bool:
+    machine = db.get(MachineDB, machine_id)
+    if machine is None:
+        return False
+
+    db.query(MaintenanceRecordDB).filter(
+        MaintenanceRecordDB.machine_id == machine_id
+    ).delete()
+    db.query(SensorDataDB).filter(SensorDataDB.machine_id == machine_id).delete()
+    db.delete(machine)
+    db.commit()
+    return True
