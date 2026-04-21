@@ -78,3 +78,30 @@ Persistenz:
 
 - Die SQLite-Datenbank wird im Docker-Volume `maintcloud_data` gespeichert.
 - Im Container wird `DATABASE_URL=sqlite:////data/maintcloud.db` verwendet.
+
+## Frontend starten
+
+Im Ordner `frontend/` liegt ein Vite-React-Frontend mit einer
+Maschinenuebersicht als Startseite.
+
+Einmalig installieren:
+
+```bash
+cd frontend
+npm install
+```
+
+Entwicklungsserver starten:
+
+```bash
+npm run dev
+```
+
+Standardmaessig erwartet das Frontend das Backend unter
+`http://localhost:8000`.
+
+Falls noetig, kann die API-URL ueber `frontend/.env` angepasst werden:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8000
+```
