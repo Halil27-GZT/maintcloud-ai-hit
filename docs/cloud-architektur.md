@@ -20,7 +20,8 @@ Die Datenhaltung ist fuer den eigentlichen Anwendungsbetrieb jetzt auf PostgreSQ
 - laeuft lokal auf Port `5173`
 - zeigt Maschinenuebersicht und Zustandsdaten an
 - greift per REST auf das Backend zu
-- kann per `npm run dev` oder Docker gestartet werden
+- kann lokal per `npm run dev` entwickelt werden
+- wird im Standard-Docker-Stack als gebautes Frontend ueber Nginx ausgeliefert
 
 ### Backend
 
@@ -48,7 +49,7 @@ Die Datenhaltung ist fuer den eigentlichen Anwendungsbetrieb jetzt auf PostgreSQ
 Browser
   |
   v
-Frontend Container (React/Vite, Port 5173)
+Frontend Container (Nginx mit Vite-Build, Port 5173)
   |
   v
 Backend Container (FastAPI, Port 8000)
@@ -61,7 +62,7 @@ PostgreSQL-Datenbank im Docker-Volume
 
 ```mermaid
 flowchart LR
-    A[Browser] --> B[Frontend\nReact + Vite\nPort 5173]
+    A[Browser] --> B[Frontend\nNginx + Vite Build\nPort 5173]
     B --> C[Backend API\nFastAPI\nPort 8000]
     C --> D[(PostgreSQL\nDocker Volume)]
 ```
@@ -75,8 +76,6 @@ flowchart LR
 
 ## Grenzen des aktuellen MVP-Setups
 
-- der aktuelle Frontend-Container nutzt noch den Vite-Dev-Server und nicht den finalen Produktions-Build
-- Vite-Dev-Server ist fuer Entwicklung gut, aber kein produktionsnaher Frontend-Server
 - es gibt noch kein zentrales Monitoring, Logging oder Authentifizierungskonzept
 - Cloud-Betrieb ist vorbereitet, aber noch nicht vollstaendig umgesetzt
 
@@ -87,7 +86,8 @@ Fuer den naechsten Ausbauschritt ist ein einfaches Demo-Deployment sinnvoll:
 - Frontend und Backend weiterhin als getrennte Container
 - Deployment per Docker Compose auf einer einzelnen VM oder einem Testserver
 - PostgreSQL als zentrale Betriebsdatenbank verwenden
-- spaeter Frontend-Build und Reverse Proxy ergaenzen
+- Frontend bereits als Build ueber einen Webserver ausliefern
+- spaeter Reverse Proxy und HTTPS ergaenzen
 
 Das ist einfacher und realistischer als sofort ein komplexes Cloud-Setup mit vielen Managed Services einzufuehren.
 
@@ -155,7 +155,7 @@ Fuer einen spaeteren produktiven Betrieb sollten mindestens folgende Punkte erga
 
 ## Empfohlene naechste Schritte
 
-1. produktionsnaehere Zielarchitektur mit Frontend-Build und Reverse Proxy beschreiben
+1. Reverse Proxy und HTTPS ergaenzen
 2. Dev- und Deployment-Konfiguration sauber trennen
 3. Datenmigrationen fuer spaetere Schema-Aenderungen vorbereiten
 4. entscheiden, ob zuerst Monitoring oder Frontend-Ausbau priorisiert wird

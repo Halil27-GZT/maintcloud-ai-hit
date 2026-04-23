@@ -99,7 +99,6 @@ Nachteile:
 
 ### Technische Risiken
 
-- Frontend laeuft derzeit mit Vite-Dev-Server und nicht als optimierter Produktions-Build
 - kein Reverse Proxy vorgeschaltet
 - kein HTTPS-Konzept umgesetzt
 - noch keine dedizierte Migrationslogik fuer spaetere Schema-Aenderungen
@@ -121,11 +120,11 @@ Nachteile:
 
 Der erste sinnvolle Ausbau nach dem aktuellen PostgreSQL-Demo-Deployment waere:
 
-1. Frontend als Build mit statischem Hosting oder Webserver
-2. Reverse Proxy mit HTTPS
+1. Reverse Proxy mit HTTPS
+2. Monitoring und Logging ergaenzen
 3. Datenmigrationen sauber einfuehren
 4. getrennte Konfiguration fuer Entwicklung und Deployment
 
 ## Kurzfassung fuer Praesentation
 
-MaintCloud AI kann bereits heute als Demo-System auf einem einzelnen Server mit Docker Compose und PostgreSQL betrieben werden. Frontend und Backend sind getrennt deploybar. Fuer den naechsten produktionsnaeheren Schritt fehlen vor allem Frontend-Build, Reverse Proxy, HTTPS und ein sauberes Migrationskonzept.
+MaintCloud AI kann bereits heute als Demo-System auf einem einzelnen Server mit Docker Compose und PostgreSQL betrieben werden. Frontend und Backend sind getrennt deploybar, und das Frontend wird als Build ueber einen Webserver ausgeliefert. Fuer den naechsten produktionsnaeheren Schritt fehlen vor allem Reverse Proxy, HTTPS und ein sauberes Migrationskonzept.

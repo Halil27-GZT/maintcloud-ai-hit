@@ -59,7 +59,7 @@ maintcloud-ai-hit/
 
 Voraussetzung: Docker Desktop laeuft lokal.
 
-Projekt starten:
+Projekt als produktionsnaehen lokalen Stack starten:
 
 ```bash
 docker compose up --build
@@ -83,13 +83,29 @@ Persistenz:
 
 - PostgreSQL speichert seine Daten im Docker-Volume `maintcloud_postgres_data`.
 - Im Backend-Container wird `DATABASE_URL=postgresql+psycopg://maintcloud:maintcloud@postgres:5432/maintcloud` verwendet.
-- Die Frontend-`node_modules` liegen im Docker-Volume `maintcloud_frontend_node_modules`.
+- Der Standard-Stack liefert ein gebautes Frontend ueber Nginx aus.
 
-Nur Frontend per Docker starten:
+Nur Frontend im produktionsnahen Modus per Docker starten:
 
 ```bash
 docker compose up --build frontend
 ```
+
+## Frontend im Docker-Entwicklungsmodus starten
+
+Wenn du das Frontend weiter mit Vite-Hot-Reload im Container nutzen willst:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build frontend-dev
+```
+
+Dabei gilt:
+
+- `docker-compose.yml` ist jetzt der produktionsnaehere Standard
+- `docker-compose.dev.yml` stellt zusaetzlich den Service `frontend-dev` mit Vite bereit
+- die Frontend-`node_modules` liegen dann im Docker-Volume `maintcloud_frontend_node_modules`
+- das produktionsnahe Frontend bleibt unter `http://localhost:5173`
+- der Vite-Dev-Server laeuft getrennt unter `http://localhost:5174`
 
 ## Backend im Terminal starten
 
