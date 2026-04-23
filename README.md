@@ -55,23 +55,54 @@ maintcloud-ai-hit/
 `-- requirements.txt
 ```
 
-## Start mit Docker
+## Was nutze ich normalerweise?
+
+Wenn du die Anwendung einfach benutzen willst, ist das dein Hauptzugang:
+
+- App: `https://localhost:5443`
+- API: `https://localhost:5443/api`
+- Swagger UI: `https://localhost:5443/docs`
+
+Das ist der produktionsnaehere lokale Stack mit:
+
+- Reverse Proxy
+- HTTPS
+- gebautem Frontend
+- Backend
+- PostgreSQL
+
+## Was ist intern?
+
+Diese Dinge sind nicht fuer den Browser als normale Hauptzugriffe gedacht:
+
+- `localhost:5432` = PostgreSQL-Datenbank
+- `maintcloud-frontend` = interner Frontend-Container hinter dem Proxy
+- `maintcloud-backend` = interner API-Container hinter dem Proxy
+- `maintcloud-proxy` = zentraler Einstiegspunkt
+
+Wichtig:
+
+- `localhost:5432` ist keine Website
+- PostgreSQL oeffnet man nicht im Browser
+- die eigentliche Browser-Adresse ist `https://localhost:5443`
+
+## Docker-Stack starten
 
 Voraussetzung: Docker Desktop laeuft lokal.
 
-Projekt als produktionsnaehen lokalen Stack starten:
+Produktionsnaehen lokalen Stack starten:
 
 ```bash
 docker compose up --build
 ```
 
-Danach sind erreichbar:
+Danach gilt:
 
-- HTTP-Einstiegspunkt ueber Reverse Proxy: `http://localhost:5173`
-- HTTPS-Einstiegspunkt ueber Reverse Proxy: `https://localhost:5443`
-- API ueber Proxy: `https://localhost:5443/api`
-- Swagger UI ueber Proxy: `https://localhost:5443/docs`
-- PostgreSQL: `localhost:5432`
+- `http://localhost:5173` leitet auf `https://localhost:5443` weiter
+- `https://localhost:5443` ist der Hauptzugang
+- `https://localhost:5443/api` ist die API ueber den Proxy
+- `https://localhost:5443/docs` ist Swagger ueber den Proxy
+- `localhost:5432` ist PostgreSQL
 
 Hinweis:
 
@@ -95,15 +126,15 @@ Persistenz:
 - Der Reverse Proxy ist der zentrale Einstiegspunkt fuer Frontend und API.
 - HTTPS wird lokal ueber ein automatisch erzeugtes selbstsigniertes Zertifikat bereitgestellt.
 
-Nur Frontend im produktionsnahen Modus per Docker starten:
+## Entwicklungsmodus
 
-```bash
-docker compose up --build frontend
-```
+Wenn du aktiv entwickeln willst, sind diese Zugriffe wichtig:
 
-## Frontend im Docker-Entwicklungsmodus starten
+- Frontend-Dev: `http://localhost:5174`
+- Backend-Dev: `http://localhost:8000`
+- Swagger im Dev-Modus: `http://localhost:8000/docs`
 
-Wenn du das Frontend weiter mit Vite-Hot-Reload im Container nutzen willst:
+Frontend im Docker-Entwicklungsmodus starten:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build frontend-dev
@@ -119,34 +150,34 @@ Dabei gilt:
 - das Backend ist im Dev-Modus direkt unter `http://localhost:8000` erreichbar
 - der produktionsnahe Proxy bleibt davon unberuehrt
 
-## Backend im Terminal starten
+## Start im Terminal
+
+Wenn du ohne Docker direkt lokal arbeiten willst:
+
+### Backend
 
 ```bash
 set DATABASE_URL=postgresql+psycopg://maintcloud:maintcloud@localhost:5432/maintcloud
 uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Hinweis:
-
-- Fuer lokale Tests verwendet das Projekt weiterhin SQLite.
-- Fuer den eigentlichen App-Betrieb ist jetzt PostgreSQL das bevorzugte Ziel.
-
-## Frontend im Terminal starten
-
-Im Ordner `frontend/` liegt ein Vite-React-Frontend mit einer Maschinenuebersicht als Startseite.
-
-Einmalig installieren:
+### Frontend
 
 ```bash
 cd frontend
 npm install
-```
-
-Entwicklungsserver starten:
-
-```bash
 npm run dev
 ```
+
+Dann gilt normalerweise:
+
+- Frontend lokal: `http://localhost:5173`
+- Backend lokal: `http://localhost:8000`
+
+Hinweis:
+
+- Fuer lokale Tests verwendet das Projekt weiterhin SQLite.
+- Fuer den eigentlichen App-Betrieb ist jetzt PostgreSQL das bevorzugte Ziel.
 
 Standardmaessig erwartet das Frontend das Backend unter `http://localhost:8000`.
 
