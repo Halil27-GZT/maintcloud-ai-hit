@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import Base, engine
+from app.migrations import upgrade_database
 from app.routes import (
     health,
     machines,
@@ -17,7 +17,7 @@ from app.services.machine_service import seed_default_machines
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    upgrade_database()
     from app.database import SessionLocal
 
     db = SessionLocal()

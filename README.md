@@ -125,6 +125,7 @@ Persistenz:
 - Der Standard-Stack liefert ein gebautes Frontend ueber Nginx aus.
 - Der Reverse Proxy ist der zentrale Einstiegspunkt fuer Frontend und API.
 - HTTPS wird lokal ueber ein automatisch erzeugtes selbstsigniertes Zertifikat bereitgestellt.
+- Datenbankschema-Aenderungen werden jetzt ueber Alembic-Migrationen verwaltet.
 
 ## Entwicklungsmodus
 
@@ -178,6 +179,19 @@ Hinweis:
 
 - Fuer lokale Tests verwendet das Projekt weiterhin SQLite.
 - Fuer den eigentlichen App-Betrieb ist jetzt PostgreSQL das bevorzugte Ziel.
+
+## Datenbankmigrationen
+
+Das Projekt verwendet jetzt Alembic fuer kontrollierte Schema-Aenderungen.
+
+Wichtige Befehle:
+
+```bash
+python -m alembic upgrade head
+python -m alembic current
+```
+
+Wenn du lokal ohne Docker arbeitest, muessen die Python-Abhaengigkeiten aus `requirements.txt` installiert sein.
 
 Standardmaessig erwartet das Frontend das Backend unter `http://localhost:8000`.
 
