@@ -67,8 +67,9 @@ docker compose up --build -d
 ### 3. Erreichbarkeit pruefen
 
 - Einstiegspunkt: `http://<server-ip>:5173`
-- API ueber Proxy: `http://<server-ip>:5173/api`
-- API-Doku ueber Proxy: `http://<server-ip>:5173/docs`
+- HTTPS-Einstiegspunkt: `https://<server-ip>:5443`
+- API ueber Proxy: `https://<server-ip>:5443/api`
+- API-Doku ueber Proxy: `https://<server-ip>:5443/docs`
 
 ### 4. Betrieb
 
@@ -102,8 +103,7 @@ Nachteile:
 
 ### Technische Risiken
 
-- kein Reverse Proxy vorgeschaltet
-- kein HTTPS-Konzept umgesetzt
+- lokal wird ein selbstsigniertes Zertifikat verwendet
 - noch keine dedizierte Migrationslogik fuer spaetere Schema-Aenderungen
 
 ### Organisatorische Risiken
@@ -123,11 +123,11 @@ Nachteile:
 
 Der erste sinnvolle Ausbau nach dem aktuellen PostgreSQL-Demo-Deployment waere:
 
-1. Reverse Proxy mit HTTPS
+1. echte TLS-Zertifikate auf dem Reverse Proxy einbinden
 2. Monitoring und Logging ergaenzen
 3. Datenmigrationen sauber einfuehren
 4. getrennte Konfiguration fuer Entwicklung und Deployment
 
 ## Kurzfassung fuer Praesentation
 
-MaintCloud AI kann bereits heute als Demo-System auf einem einzelnen Server mit Docker Compose und PostgreSQL betrieben werden. Ein Reverse Proxy bildet den zentralen Einstiegspunkt, das Frontend wird als Build ueber einen Webserver ausgeliefert, und die API laeuft dahinter getrennt. Fuer den naechsten produktionsnaeheren Schritt fehlen vor allem HTTPS und ein sauberes Migrationskonzept.
+MaintCloud AI kann bereits heute als Demo-System auf einem einzelnen Server mit Docker Compose und PostgreSQL betrieben werden. Ein Reverse Proxy bildet den zentralen Einstiegspunkt, das Frontend wird als Build ueber einen Webserver ausgeliefert, und die API laeuft dahinter getrennt. HTTPS ist lokal bereits vorbereitet, verwendet aber noch ein selbstsigniertes Zertifikat. Fuer den naechsten produktionsnaeheren Schritt fehlen vor allem vertrauenswuerdige Zertifikate und ein sauberes Migrationskonzept.

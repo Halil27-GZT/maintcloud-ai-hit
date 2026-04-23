@@ -28,7 +28,8 @@ Die Datenhaltung ist fuer den eigentlichen Anwendungsbetrieb jetzt auf PostgreSQ
 - zentraler Einstiegspunkt fuer Browser-Zugriffe
 - leitet `/` an das Frontend weiter
 - leitet `/api`, `/docs`, `/openapi.json` und `/health` an das Backend weiter
-- vereinfacht spaetere Einfuehrung von HTTPS
+- stellt lokal bereits HTTPS mit selbstsigniertem Zertifikat bereit
+- vereinfacht spaetere Einfuehrung echter Zertifikate
 
 ### Backend
 
@@ -57,7 +58,7 @@ Die Datenhaltung ist fuer den eigentlichen Anwendungsbetrieb jetzt auf PostgreSQ
 Browser
   |
   v
-Reverse Proxy (Port 5173)
+Reverse Proxy (HTTP 5173 / HTTPS 5443)
   |
   +--> Frontend Container (Nginx mit Vite-Build)
   |
@@ -71,7 +72,7 @@ Reverse Proxy (Port 5173)
 
 ```mermaid
 flowchart LR
-    A[Browser] --> B[Reverse Proxy\nNginx\nPort 5173]
+    A[Browser] --> B[Reverse Proxy\nNginx\nHTTP 5173 / HTTPS 5443]
     B --> C[Frontend\nNginx + Vite Build]
     B --> D[Backend API\nFastAPI]
     D --> E[(PostgreSQL\nDocker Volume)]
@@ -87,6 +88,7 @@ flowchart LR
 ## Grenzen des aktuellen MVP-Setups
 
 - es gibt noch kein zentrales Monitoring, Logging oder Authentifizierungskonzept
+- lokal wird noch ein selbstsigniertes Zertifikat statt eines vertrauenswuerdigen Zertifikats genutzt
 - Cloud-Betrieb ist vorbereitet, aber noch nicht vollstaendig umgesetzt
 
 ## Empfohlenes naechstes Deployment-Ziel
@@ -98,7 +100,7 @@ Fuer den naechsten Ausbauschritt ist ein einfaches Demo-Deployment sinnvoll:
 - Deployment per Docker Compose auf einer einzelnen VM oder einem Testserver
 - PostgreSQL als zentrale Betriebsdatenbank verwenden
 - Frontend bereits als Build ueber einen Webserver ausliefern
-- spaeter Reverse Proxy und HTTPS ergaenzen
+- spaeter echte Zertifikate fuer Domain und Produktivbetrieb einbinden
 
 Das ist einfacher und realistischer als sofort ein komplexes Cloud-Setup mit vielen Managed Services einzufuehren.
 
@@ -148,7 +150,7 @@ Fuer einen spaeteren produktiven Betrieb sollten mindestens folgende Punkte erga
 
 - Trennung von Entwicklungs- und Produktivkonfiguration
 - Verwaltung von Umgebungsvariablen und Secrets
-- HTTPS und Reverse Proxy
+- vertrauenswuerdige TLS-Zertifikate statt selbstsignierter Zertifikate
 - Monitoring, Logging und Backup-Konzept
 - rollenbasierter Zugriff fuer Benutzer
 
@@ -168,7 +170,7 @@ Fuer einen spaeteren produktiven Betrieb sollten mindestens folgende Punkte erga
 
 ## Empfohlene naechste Schritte
 
-1. Reverse Proxy und HTTPS ergaenzen
-2. HTTPS auf dem Reverse Proxy ergaenzen
+1. echte TLS-Zertifikate fuer Domain oder Testserver einbinden
+2. HTTP und HTTPS auf Standardports 80 und 443 vorbereiten
 3. Datenmigrationen fuer spaetere Schema-Aenderungen vorbereiten
 4. entscheiden, ob zuerst Monitoring oder Frontend-Ausbau priorisiert wird

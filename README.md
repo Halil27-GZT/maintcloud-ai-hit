@@ -67,10 +67,16 @@ docker compose up --build
 
 Danach sind erreichbar:
 
-- Einstiegspunkt ueber Reverse Proxy: `http://localhost:5173`
-- API ueber Proxy: `http://localhost:5173/api`
-- Swagger UI ueber Proxy: `http://localhost:5173/docs`
+- HTTP-Einstiegspunkt ueber Reverse Proxy: `http://localhost:5173`
+- HTTPS-Einstiegspunkt ueber Reverse Proxy: `https://localhost:5443`
+- API ueber Proxy: `https://localhost:5443/api`
+- Swagger UI ueber Proxy: `https://localhost:5443/docs`
 - PostgreSQL: `localhost:5432`
+
+Hinweis:
+
+- Der Proxy leitet `http://localhost:5173` auf `https://localhost:5443` weiter.
+- Lokal wird ein selbstsigniertes Zertifikat verwendet. Der Browser wird deshalb zunaechst eine Sicherheitswarnung anzeigen.
 
 Nuetzliche Befehle:
 
@@ -87,6 +93,7 @@ Persistenz:
 - Im Backend-Container wird `DATABASE_URL=postgresql+psycopg://maintcloud:maintcloud@postgres:5432/maintcloud` verwendet.
 - Der Standard-Stack liefert ein gebautes Frontend ueber Nginx aus.
 - Der Reverse Proxy ist der zentrale Einstiegspunkt fuer Frontend und API.
+- HTTPS wird lokal ueber ein automatisch erzeugtes selbstsigniertes Zertifikat bereitgestellt.
 
 Nur Frontend im produktionsnahen Modus per Docker starten:
 
@@ -110,6 +117,7 @@ Dabei gilt:
 - das produktionsnahe Frontend bleibt unter `http://localhost:5173`
 - der Vite-Dev-Server laeuft getrennt unter `http://localhost:5174`
 - das Backend ist im Dev-Modus direkt unter `http://localhost:8000` erreichbar
+- der produktionsnahe Proxy bleibt davon unberuehrt
 
 ## Backend im Terminal starten
 
