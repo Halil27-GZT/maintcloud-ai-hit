@@ -1,8 +1,8 @@
 # MaintCloud AI
 
-**MaintCloud AI** ist ein cloudbasierter Wartungsassistent für industrielle Anwendungen.
+**MaintCloud AI** ist ein cloudbasierter Wartungsassistent fuer industrielle Anwendungen.
 
-Das Projekt dient dazu, Maschinenzustände zu überwachen, Wartungsbedarfe frühzeitig zu erkennen und Wartungsinformationen strukturiert zu dokumentieren. In der ersten Version basiert das System auf einer **IoT-Simulation**, um reale Maschinendaten wie Temperatur, Laufzeit und Status nachzubilden.
+Das Projekt dient dazu, Maschinenzustaende zu ueberwachen, Wartungsbedarfe fruehzeitig zu erkennen und Wartungsinformationen strukturiert zu dokumentieren. In der ersten Version basiert das System auf einer **IoT-Simulation**, um reale Maschinendaten wie Temperatur, Laufzeit und Status nachzubilden.
 
 > A Solution by **H.I.T. (House of Intelligent Technology)**
 
@@ -13,9 +13,9 @@ Das Projekt dient dazu, Maschinenzustände zu überwachen, Wartungsbedarfe früh
 Ziel von MaintCloud AI ist die Entwicklung eines digitalen Wartungssystems, das:
 
 - Maschinen verwaltet
-- Zustände analysiert
-- Wartungsmaßnahmen dokumentiert
-- eine Grundlage für spätere Cloud-Integration bietet
+- Zustaende analysiert
+- Wartungsmassnahmen dokumentiert
+- eine Grundlage fuer spaetere Cloud-Integration bietet
 
 ---
 
@@ -24,7 +24,7 @@ Ziel von MaintCloud AI ist die Entwicklung eines digitalen Wartungssystems, das:
 - Maschinen anlegen, anzeigen und verwalten
 - Simulierte Maschinendaten erzeugen
 - Zustandsbewertung (OK / Wartung / kritisch)
-- Wartungseinträge speichern
+- Wartungseintraege speichern
 - REST-API mit Python / FastAPI
 - Erweiterbar um Cloud, Dashboard und KI-Funktionen
 
@@ -37,7 +37,7 @@ Aktueller Stand:
 - Projektstruktur erstellt
 - Dokumentation aufgebaut
 - Git-Repository initialisiert
-- nächste Phase: Backend-Grundgerüst
+- naechste Phase: Backend-Grundgeruest
 
 ---
 
@@ -45,19 +45,19 @@ Aktueller Stand:
 
 ```text
 maintcloud-ai-hit/
-├── backend/
-├── database/
-├── docs/
-├── frontend/
-├── scripts/
-├── .gitignore
-├── README.md
-└── requirements.txt
+|-- backend/
+|-- database/
+|-- docs/
+|-- frontend/
+|-- scripts/
+|-- .gitignore
+|-- README.md
+`-- requirements.txt
 ```
 
 ## Start mit Docker
 
-Voraussetzung: Docker Desktop lÃ¤uft lokal.
+Voraussetzung: Docker Desktop laeuft lokal.
 
 Projekt starten:
 
@@ -65,24 +65,40 @@ Projekt starten:
 docker compose up --build
 ```
 
-Danach ist die API unter `http://localhost:8000` erreichbar.
+Danach sind erreichbar:
 
-NÃ¼tzliche Befehle:
+- Backend API: `http://localhost:8000`
+- Frontend: `http://localhost:5173`
+
+Nuetzliche Befehle:
 
 ```bash
 docker compose down
 docker compose logs -f backend
+docker compose logs -f frontend
 ```
 
 Persistenz:
 
 - Die SQLite-Datenbank wird im Docker-Volume `maintcloud_data` gespeichert.
 - Im Container wird `DATABASE_URL=sqlite:////data/maintcloud.db` verwendet.
+- Die Frontend-`node_modules` liegen im Docker-Volume `maintcloud_frontend_node_modules`.
 
-## Frontend starten
+Nur Frontend per Docker starten:
 
-Im Ordner `frontend/` liegt ein Vite-React-Frontend mit einer
-Maschinenuebersicht als Startseite.
+```bash
+docker compose up --build frontend
+```
+
+## Backend im Terminal starten
+
+```bash
+uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+## Frontend im Terminal starten
+
+Im Ordner `frontend/` liegt ein Vite-React-Frontend mit einer Maschinenuebersicht als Startseite.
 
 Einmalig installieren:
 
@@ -97,11 +113,15 @@ Entwicklungsserver starten:
 npm run dev
 ```
 
-Standardmaessig erwartet das Frontend das Backend unter
-`http://localhost:8000`.
+Standardmaessig erwartet das Frontend das Backend unter `http://localhost:8000`.
 
 Falls noetig, kann die API-URL ueber `frontend/.env` angepasst werden:
 
 ```bash
 VITE_API_BASE_URL=http://localhost:8000
 ```
+
+Damit bleiben beide Wege erhalten:
+
+- Docker Desktop beziehungsweise `docker compose`
+- Direkter Start im Terminal
