@@ -67,14 +67,16 @@ docker compose up --build
 
 Danach sind erreichbar:
 
-- Backend API: `http://localhost:8000`
-- Frontend: `http://localhost:5173`
+- Einstiegspunkt ueber Reverse Proxy: `http://localhost:5173`
+- API ueber Proxy: `http://localhost:5173/api`
+- Swagger UI ueber Proxy: `http://localhost:5173/docs`
 - PostgreSQL: `localhost:5432`
 
 Nuetzliche Befehle:
 
 ```bash
 docker compose down
+docker compose logs -f proxy
 docker compose logs -f backend
 docker compose logs -f frontend
 ```
@@ -84,6 +86,7 @@ Persistenz:
 - PostgreSQL speichert seine Daten im Docker-Volume `maintcloud_postgres_data`.
 - Im Backend-Container wird `DATABASE_URL=postgresql+psycopg://maintcloud:maintcloud@postgres:5432/maintcloud` verwendet.
 - Der Standard-Stack liefert ein gebautes Frontend ueber Nginx aus.
+- Der Reverse Proxy ist der zentrale Einstiegspunkt fuer Frontend und API.
 
 Nur Frontend im produktionsnahen Modus per Docker starten:
 
@@ -106,6 +109,7 @@ Dabei gilt:
 - die Frontend-`node_modules` liegen dann im Docker-Volume `maintcloud_frontend_node_modules`
 - das produktionsnahe Frontend bleibt unter `http://localhost:5173`
 - der Vite-Dev-Server laeuft getrennt unter `http://localhost:5174`
+- das Backend ist im Dev-Modus direkt unter `http://localhost:8000` erreichbar
 
 ## Backend im Terminal starten
 

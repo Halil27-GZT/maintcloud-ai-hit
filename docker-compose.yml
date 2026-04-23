@@ -27,8 +27,6 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql+psycopg://maintcloud:maintcloud@postgres:5432/maintcloud
-    ports:
-      - "8000:8000"
     restart: unless-stopped
   frontend:
     build:
@@ -36,12 +34,21 @@ services:
       dockerfile: Dockerfile
       target: production
       args:
-        VITE_API_BASE_URL: http://localhost:8000
+        VITE_API_BASE_URL: /api
     container_name: maintcloud-frontend
     depends_on:
       - backend
+    restart: unless-stopped
+  proxy:
+    image: nginx:1.27-alpine
+    container_name: maintcloud-proxy
+    depends_on:
+      - frontend
+      - backend
     ports:
       - "5173:80"
+    volumes:
+      - ./infra/reverse-proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
   backend-test:
     build:

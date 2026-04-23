@@ -19,6 +19,7 @@ Nicht gedacht als finale Produktionsarchitektur.
 
 ## Komponenten im Demo-Deployment
 
+- Reverse Proxy als zentraler Einstiegspunkt
 - Frontend als eigener Container
 - Backend als eigener Container
 - PostgreSQL-Datenbank ueber Docker-Volume
@@ -37,10 +38,11 @@ Nicht gedacht als finale Produktionsarchitektur.
 Nutzerbrowser
   |
   v
-Frontend unter Port 5173
+Reverse Proxy unter Port 5173
   |
-  v
-Backend API unter Port 8000
+  +-- Frontend
+  |
+  +-- Backend API
   |
   v
 PostgreSQL im persistierten Docker-Volume
@@ -64,9 +66,9 @@ docker compose up --build -d
 
 ### 3. Erreichbarkeit pruefen
 
-- Frontend: `http://<server-ip>:5173`
-- Backend: `http://<server-ip>:8000`
-- API-Doku: `http://<server-ip>:8000/docs`
+- Einstiegspunkt: `http://<server-ip>:5173`
+- API ueber Proxy: `http://<server-ip>:5173/api`
+- API-Doku ueber Proxy: `http://<server-ip>:5173/docs`
 
 ### 4. Betrieb
 
@@ -74,6 +76,7 @@ Wichtige Befehle:
 
 ```bash
 docker compose ps
+docker compose logs -f proxy
 docker compose logs -f backend
 docker compose logs -f frontend
 docker compose down
@@ -127,4 +130,4 @@ Der erste sinnvolle Ausbau nach dem aktuellen PostgreSQL-Demo-Deployment waere:
 
 ## Kurzfassung fuer Praesentation
 
-MaintCloud AI kann bereits heute als Demo-System auf einem einzelnen Server mit Docker Compose und PostgreSQL betrieben werden. Frontend und Backend sind getrennt deploybar, und das Frontend wird als Build ueber einen Webserver ausgeliefert. Fuer den naechsten produktionsnaeheren Schritt fehlen vor allem Reverse Proxy, HTTPS und ein sauberes Migrationskonzept.
+MaintCloud AI kann bereits heute als Demo-System auf einem einzelnen Server mit Docker Compose und PostgreSQL betrieben werden. Ein Reverse Proxy bildet den zentralen Einstiegspunkt, das Frontend wird als Build ueber einen Webserver ausgeliefert, und die API laeuft dahinter getrennt. Fuer den naechsten produktionsnaeheren Schritt fehlen vor allem HTTPS und ein sauberes Migrationskonzept.

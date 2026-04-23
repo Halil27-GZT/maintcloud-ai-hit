@@ -19,9 +19,16 @@ Die Datenhaltung ist fuer den eigentlichen Anwendungsbetrieb jetzt auf PostgreSQ
 
 - laeuft lokal auf Port `5173`
 - zeigt Maschinenuebersicht und Zustandsdaten an
-- greift per REST auf das Backend zu
+- greift per REST ueber den Reverse Proxy auf das Backend zu
 - kann lokal per `npm run dev` entwickelt werden
 - wird im Standard-Docker-Stack als gebautes Frontend ueber Nginx ausgeliefert
+
+### Reverse Proxy
+
+- zentraler Einstiegspunkt fuer Browser-Zugriffe
+- leitet `/` an das Frontend weiter
+- leitet `/api`, `/docs`, `/openapi.json` und `/health` an das Backend weiter
+- vereinfacht spaetere Einfuehrung von HTTPS
 
 ### Backend
 
@@ -38,10 +45,11 @@ Die Datenhaltung ist fuer den eigentlichen Anwendungsbetrieb jetzt auf PostgreSQ
 
 ## Datenfluss
 
-1. Das Frontend sendet HTTP-Anfragen an das Backend.
-2. Das Backend validiert die Anfragen und fuehrt die Geschaeftslogik aus.
-3. Das Backend liest oder schreibt Daten in die PostgreSQL-Datenbank.
-4. Das Frontend stellt die Antworten als Maschinenstatus, Sensorwerte und Wartungsinformationen dar.
+1. Der Browser ruft den Reverse Proxy auf.
+2. Der Reverse Proxy liefert das Frontend aus oder leitet API-Anfragen an das Backend weiter.
+3. Das Backend validiert die Anfragen und fuehrt die Geschaeftslogik aus.
+4. Das Backend liest oder schreibt Daten in die PostgreSQL-Datenbank.
+5. Das Frontend stellt die Antworten als Maschinenstatus, Sensorwerte und Wartungsinformationen dar.
 
 ## Lokale Zielarchitektur mit Docker
 
@@ -49,22 +57,24 @@ Die Datenhaltung ist fuer den eigentlichen Anwendungsbetrieb jetzt auf PostgreSQ
 Browser
   |
   v
-Frontend Container (Nginx mit Vite-Build, Port 5173)
+Reverse Proxy (Port 5173)
   |
-  v
-Backend Container (FastAPI, Port 8000)
+  +--> Frontend Container (Nginx mit Vite-Build)
   |
-  v
-PostgreSQL-Datenbank im Docker-Volume
+  `--> Backend Container (FastAPI)
+           |
+           v
+      PostgreSQL-Datenbank im Docker-Volume
 ```
 
 ## Architekturdiagramm fuer Praesentation
 
 ```mermaid
 flowchart LR
-    A[Browser] --> B[Frontend\nNginx + Vite Build\nPort 5173]
-    B --> C[Backend API\nFastAPI\nPort 8000]
-    C --> D[(PostgreSQL\nDocker Volume)]
+    A[Browser] --> B[Reverse Proxy\nNginx\nPort 5173]
+    B --> C[Frontend\nNginx + Vite Build]
+    B --> D[Backend API\nFastAPI]
+    D --> E[(PostgreSQL\nDocker Volume)]
 ```
 
 ## Warum diese Architektur fuer den MVP sinnvoll ist
@@ -84,6 +94,7 @@ flowchart LR
 Fuer den naechsten Ausbauschritt ist ein einfaches Demo-Deployment sinnvoll:
 
 - Frontend und Backend weiterhin als getrennte Container
+- Reverse Proxy als zentralen Einstiegspunkt verwenden
 - Deployment per Docker Compose auf einer einzelnen VM oder einem Testserver
 - PostgreSQL als zentrale Betriebsdatenbank verwenden
 - Frontend bereits als Build ueber einen Webserver ausliefern
@@ -98,6 +109,8 @@ Internet oder lokales Netzwerk
   |
   v
 Server oder VM mit Docker Compose
+  |
+  +-- Reverse-Proxy-Container
   |
   +-- Frontend-Container
   |
@@ -156,6 +169,6 @@ Fuer einen spaeteren produktiven Betrieb sollten mindestens folgende Punkte erga
 ## Empfohlene naechste Schritte
 
 1. Reverse Proxy und HTTPS ergaenzen
-2. Dev- und Deployment-Konfiguration sauber trennen
+2. HTTPS auf dem Reverse Proxy ergaenzen
 3. Datenmigrationen fuer spaetere Schema-Aenderungen vorbereiten
 4. entscheiden, ob zuerst Monitoring oder Frontend-Ausbau priorisiert wird
