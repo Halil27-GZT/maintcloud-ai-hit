@@ -1,164 +1,118 @@
-# 🛣️ Roadmap – MaintCloud AI
+# Roadmap - MaintCloud AI
 
----
+## Uebersicht
 
-## 🧠 Übersicht
+Diese Roadmap beschreibt den aktuellen Entwicklungsstand von MaintCloud AI und die naechsten sinnvollen Schritte fuer Projektarbeit und Praesentation.
 
-Diese Roadmap beschreibt die Entwicklung von MaintCloud AI unter Berücksichtigung des realen Zeitplans:
+## Phase 1 - Projektstart und Grundlagen
 
-- Projektentwicklung
-- Zertifikatsvorbereitung
-- IHK-Abschlussphase
+Status: abgeschlossen
 
----
+- Projektstruktur aufgebaut
+- Grunddokumentation erstellt
+- GitHub-Repository eingerichtet
+- lokale Entwicklungsumgebung vorbereitet
 
-## 📌 Phase 1 – Projektstart & Grundlagen (Woche 1–2)
+Deliverables:
 
-- Projektstruktur aufbauen
-- Dokumentation erstellen:
-  - Projektidee
-  - Zielsetzung
-  - Pflichtenheft
-  - User Stories
-- Entwicklungsumgebung einrichten
-- GitHub Repository aufsetzen
+- dokumentierte Projektidee
+- Zielsetzung, Pflichtenheft, User Stories
+- sauberes Repository als Arbeitsbasis
 
----
+## Phase 2 - Backend und Datenmodell
 
-### 🎯 Deliverables
+Status: abgeschlossen
 
-- vollständige Grunddokumentation  
-- funktionierendes Repository  
-- Projektstruktur  
+- FastAPI-Backend implementiert
+- SQLite-Datenbank eingerichtet
+- Datenmodelle fuer Maschinen, Sensordaten und Wartung angelegt
+- erste API-Endpunkte erstellt
 
----
+Deliverables:
 
-## 📌 Phase 2 – Backend & Datenmodell (Woche 3–4)
+- lauffaehige REST-API
+- persistente Datenhaltung mit SQLite
+- Swagger-Dokumentation unter `/docs`
 
-- FastAPI Backend starten
-- Datenbank (SQLite) einrichten
-- Datenmodell definieren:
-  - Maschinen
-  - Wartungseinträge
-- erste API-Endpunkte erstellen
+## Phase 3 - MVP-Entwicklung
 
----
+Status: abgeschlossen
 
-### 🎯 Deliverables
+- Maschinenverwaltung umgesetzt
+- regelbasierte Risikoanalyse implementiert
+- Sensordaten-Endpunkte integriert
+- Wartungseintraege speicherbar gemacht
+- React-Frontend fuer Maschinenuebersicht erstellt
 
-- funktionierendes Backend (Basis)  
-- Datenbankstruktur  
-- erste API  
+Deliverables:
 
----
+- funktionsfaehiger MVP
+- Frontend und Backend lokal nutzbar
+- Kernprozesse fuer Predictive Maintenance abgebildet
 
-## 📌 Phase 3 – MVP Entwicklung (Woche 5–6)
+## Phase 4 - Stabilisierung und DevOps
 
-- Maschinenverwaltung implementieren
-- Datensimulation entwickeln
-- Zustandslogik (OK / Wartung / kritisch)
-- Wartungseinträge speichern
+Status: abgeschlossen
 
----
+- API-Tests mit Pytest erstellt
+- Linting per Ruff in CI integriert
+- Docker-Workflow fuer Backend eingerichtet
+- Docker-Workflow fuer Frontend ergaenzt
+- Start ueber Terminal und Docker Desktop ermoeglicht
 
-### 🎯 Deliverables
+Deliverables:
 
-- funktionsfähiger MVP  
-- vollständige Kernlogik  
-- getestete Funktionen  
+- stabile lokale Entwicklungsumgebung
+- GitHub Actions CI
+- Docker Compose fuer Frontend und Backend
 
----
+## Phase 5 - Cloud-Konzept und Architektur
 
-## 📌 Phase 4 – Erweiterung & Stabilisierung (Woche 7–8)
+Status: in Arbeit
 
-- API erweitern
-- Fehlerbehandlung implementieren
-- Tests durchführen
-- erste Optimierungen
+- Zielarchitektur fuer Cloud-Betrieb dokumentieren
+- Komponenten und Verantwortungen sauber trennen
+- Deployment-Konzept fuer Demo- und spaetere Produktivumgebung definieren
+- Kosten, Risiken und Skalierungsgrenzen grob bewerten
 
----
+Deliverables:
 
-### 🎯 Deliverables
+- Architektur-Dokument
+- Deployment-Konzept
+- Grundlage fuer Praesentation und IHK-Kontext
 
-- stabiles System  
-- getestete API  
-- saubere Codebasis  
+## Phase 6 - Produktnaechste Erweiterungen
 
----
+Status: geplant
 
-## 📌 Phase 5 – Cloud-Konzept & Architektur (Woche 9–10)
+- Visualisierung erweitern
+- Fehlerbehandlung und Monitoring verbessern
+- Frontend um Detailansichten und Verlaufsdaten ergaenzen
+- optional Benutzerverwaltung vorbereiten
 
-- Cloud-Architektur planen
-- Komponenten trennen (Backend / DB)
-- Deployment-Konzept erstellen
-- Kosten & Skalierung analysieren
+Deliverables:
 
----
+- nutzerfreundlicheres Frontend
+- bessere Betriebs- und Analysefaehigkeit
 
-### 🎯 Deliverables
+## Phase 7 - Praesentation und Abschluss
 
-- Cloud-Architektur (Diagramm)  
-- Deployment-Konzept  
-- Grundlage für IHK-Prüfung  
+Status: geplant
 
----
+- Projektstand strukturiert dokumentieren
+- Architektur und Mehrwert aufbereiten
+- Praesentation fuer Fachgespraeche oder IHK-Kontext vorbereiten
+- Entscheidungen und Trade-offs sauber begruenden
 
-## 📌 Phase 6 – IHK Vorbereitung (letzte 4 Wochen)
+Deliverables:
 
-- Arbeiten mit den bereitgestellten Unterlagen
-- Cloud Business Expert Inhalte vertiefen
-- Präsentation vorbereiten:
-  - Problemstellung
-  - Lösung
-  - Architektur
-  - Mehrwert
-- Probepräsentationen durchführen
+- praesentationsfaehiges Projekt
+- klare Architekturstory
+- belastbare technische Argumentation
 
----
+## Prioritaeten ab jetzt
 
-### 🎯 Deliverables
-
-- fertige Präsentation  
-- klares Konzept  
-- prüfungsreifes Projekt  
-
----
-
-## 🏁 Gesamtzeit
-
-- Projektentwicklung: ca. 8–10 Wochen  
-- IHK-Vorbereitung: 4 Wochen  
-
-👉 Gesamt: **ca. 12–14 Wochen**
-
----
-
-## 🎯 Prioritäten
-
-### 🥇 MVP
-- Maschinenverwaltung  
-- Datensimulation  
-- Zustandsbewertung  
-- Wartungsdokumentation  
-
----
-
-### 🥈 Erweiterung
-- API  
-- Tests  
-- Stabilität  
-
----
-
-### 🥉 Zukunft
-- Cloud Deployment  
-- KI  
-- Mobile Nutzung  
-
----
-
-## 🚀 Ziel der Roadmap
-
-- strukturierte Umsetzung des Projekts  
-- klare Orientierung im Alltag  
-- optimale Vorbereitung auf die IHK-Prüfung  
+1. Planungs- und Projektdokumentation auf Ist-Stand halten
+2. Cloud-Architektur und Deployment-Konzept ausarbeiten
+3. Frontend funktional vertiefen
+4. Betriebsaspekte wie Monitoring, Logging und Sicherheit vorbereiten

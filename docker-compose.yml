@@ -1,16 +1,34 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: maintcloud-postgres
+    environment:
+      POSTGRES_DB: maintcloud
+      POSTGRES_USER: maintcloud
+      POSTGRES_PASSWORD: maintcloud
+    ports:
+      - "5432:5432"
+    volumes:
+      - maintcloud_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U maintcloud -d maintcloud"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
   backend:
     build:
       context: .
       dockerfile: Dockerfile
       target: runtime
     container_name: maintcloud-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
-      DATABASE_URL: sqlite:////data/maintcloud.db
+      DATABASE_URL: postgresql+psycopg://maintcloud:maintcloud@postgres:5432/maintcloud
     ports:
       - "8000:8000"
-    volumes:
-      - maintcloud_data:/data
     restart: unless-stopped
   frontend:
     build:
@@ -42,5 +60,5 @@ services:
     command: ["python", "-m", "pytest"]
 
 volumes:
-  maintcloud_data:
+  maintcloud_postgres_data:
   maintcloud_frontend_node_modules:

@@ -1,113 +1,54 @@
-# 📋 Kanban Board – MaintCloud AI
+# Kanban Board - MaintCloud AI
 
----
+## Uebersicht
 
-## 🧠 Übersicht
+Dieses Kanban Board spiegelt den aktuellen Projektstand wider und dient als einfache Priorisierung fuer die naechsten Schritte.
 
-Das Kanban Board dient zur Organisation und Steuerung der Entwicklung von MaintCloud AI.
+## Backlog
 
-Aufgaben werden als Cards verwaltet und je nach Fortschritt zwischen den Spalten verschoben.
+- Benutzerverwaltung
+- Benachrichtigungssystem bei kritischen Zustaenden
+- Diagramme und Visualisierung von Verlaeufen
+- Mobile Optimierung
+- produktionsnahes Deployment
+- spaetere Cloud-Integration mit Managed Services
 
----
+## To Do
 
-## 🗂️ Spaltenstruktur
+- Komponenten und Datenfluesse visualisieren
+- Risiken, Kosten und Skalierung bewerten
+- produktionsnaechste Zielarchitektur mit PostgreSQL beschreiben
 
----
+## In Progress
 
-### 📥 Backlog
+- Architektur und Deployment fuer Praesentation weiter verdichten
 
-Alle geplanten Aufgaben, die noch nicht priorisiert oder gestartet wurden.
+## Review / Test
 
----
+- Architekturtext auf Konsistenz mit dem aktuellen Docker- und API-Setup pruefen
+- Pruefen, welche Punkte fuer Praesentation und IHK-Kontext besonders wichtig sind
 
-### 📝 To Do
-
-Aufgaben, die als Nächstes umgesetzt werden sollen.
-
----
-
-### ⚙️ In Progress
-
-Aufgaben, an denen aktuell gearbeitet wird.
-
----
-
-### 🔍 Review / Test
-
-Aufgaben, die überprüft, getestet oder optimiert werden.
-
----
-
-### ✅ Done
-
-Abgeschlossene Aufgaben.
-
----
-
-## 📌 Beispiel-Aufgaben
-
----
-
-### 📥 Backlog
-
-- Benutzerverwaltung (Login-System)
-- Cloud-Integration (AWS / Azure)
-- Diagramme & Visualisierung
-- Benachrichtigungssystem (Alerts)
-- Mobile Nutzung
-
----
-
-### 📝 To Do
-
-- FastAPI installieren
-- Backend starten
-- erste API-Route erstellen (`/`)
-- SQLite Datenbank einrichten
-- Datenbankverbindung herstellen
-
----
-
-### ⚙️ In Progress
-
-- Backend-Grundstruktur aufbauen
-- erste Tests durchführen
-
----
-
-### 🔍 Review / Test
-
-- API-Endpunkte testen (Postman)
-- Statuslogik überprüfen
-- Fehlerbehandlung testen
-
----
-
-### ✅ Done
+## Done
 
 - Projektstruktur erstellt
-- GitHub Repository eingerichtet
-- Projektidee dokumentiert
-- Zielsetzung erstellt
-- Pflichtenheft erstellt
-- User Stories definiert
-- Roadmap erstellt
-- ToDo Liste erstellt
+- Dokumentation als Grundlage erstellt
+- FastAPI-Backend aufgebaut
+- SQLite integriert
+- Maschinenverwaltung umgesetzt
+- Wartungsfunktionen umgesetzt
+- Sensordaten-API umgesetzt
+- Risikoanalyse umgesetzt
+- Pytest-Tests erstellt
+- GitHub Actions CI eingerichtet
+- React-Frontend erstellt
+- Docker fuer Backend eingerichtet
+- Docker fuer Frontend eingerichtet
+- Start ueber Docker Desktop erfolgreich getestet
+- Cloud-Architektur dokumentiert
+- Demo-Deployment-Konzept dokumentiert
 
----
+## Nutzung
 
-## 🚀 Nutzung
-
-- Aufgaben aus der ToDo-Liste werden in „To Do“ verschoben
-- aktive Aufgaben befinden sich in „In Progress“
-- abgeschlossene Aufgaben werden nach „Done“ verschoben
-
----
-
-## 🎯 Ziel
-
-- klare Übersicht über den Projektfortschritt
-- strukturierte Arbeitsweise
-- Fokus auf aktuelle Aufgaben
-
-👉 Umsetzung wie in echten Softwareprojekten
+- Neue Aufgaben kommen zuerst ins Backlog oder To Do
+- Aktive Arbeit bleibt in In Progress
+- Gepruefte Inhalte gehen nach Review in Done

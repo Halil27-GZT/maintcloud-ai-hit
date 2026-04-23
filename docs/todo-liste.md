@@ -1,119 +1,59 @@
-# ✅ ToDo Liste – MaintCloud AI
+# ToDo Liste - MaintCloud AI
 
----
+## Uebersicht
 
-## 🧠 Übersicht
+Diese ToDo-Liste bildet den aktuellen technischen Stand des Projekts ab und priorisiert die naechsten Arbeitsschritte.
 
-Diese ToDo-Liste enthält alle technischen Aufgaben zur Umsetzung des Projekts MaintCloud AI.
+## Bereits erledigt
 
-Sie basiert auf:
+- [x] GitHub-Repository eingerichtet
+- [x] Projektstruktur angelegt
+- [x] Grunddokumentation erstellt
+- [x] FastAPI-Backend implementiert
+- [x] SQLite angebunden
+- [x] Datenmodelle fuer Maschinen, Sensordaten und Wartung erstellt
+- [x] CRUD fuer Maschinen umgesetzt
+- [x] Wartungseintraege anlegen, bearbeiten, loeschen und lesen
+- [x] Sensordaten speichern und abrufen
+- [x] regelbasierte Risikoanalyse integriert
+- [x] API-Tests mit Pytest erstellt
+- [x] CI mit Ruff und Pytest eingerichtet
+- [x] React-Frontend fuer Maschinenuebersicht umgesetzt
+- [x] Docker-Setup fuer Backend eingerichtet
+- [x] Docker-Setup fuer Frontend eingerichtet
+- [x] Start ueber Docker Desktop und Terminal dokumentiert
 
-- Pflichtenheft
-- User Stories
-- Roadmap
+## Aktuell naechste Schritte
 
----
+### Phase 5 - Cloud und Architektur
 
-# 🚀 Phase 1 – Setup & Grundlagen
+- [x] Roadmap, ToDo-Liste und Kanban auf Ist-Stand bringen
+- [x] Cloud-Architektur dokumentieren
+- [x] Deployment-Konzept fuer Demo-Betrieb beschreiben
+- [ ] Komponenten sauber abgrenzen: Frontend, Backend, Datenbank, Volumes
+- [ ] Risiken und Skalierung kurz bewerten
 
-- [x] GitHub Repository erstellen
-- [x] Projektstruktur anlegen
-- [x] Dokumentation erstellen:
-  - [x] Projektidee
-  - [x] Zielsetzung
-  - [x] Pflichtenheft
-  - [x] User Stories
-  - [x] Roadmap
-- [ ] README final überarbeiten
+### Phase 6 - Produktnaechste Erweiterungen
 
----
+- [ ] Maschinen-Detailansicht im Frontend ergaenzen
+- [ ] Verlaufsdaten fuer Sensordaten im Frontend anzeigen
+- [ ] Fehlerzustaende im Frontend besser darstellen
+- [ ] Konfigurierbare API-Umgebungen fuer Dev und spaeteres Deployment absichern
 
-# ⚙️ Phase 2 – Backend Start
+### Qualitaet und Betrieb
 
-- [ ] FastAPI installieren
-- [ ] Backend starten (`main.py`)
-- [ ] erste API-Route erstellen (`/`)
-- [ ] Server testen (localhost)
+- [ ] README final sprachlich bereinigen
+- [ ] Logging- und Monitoring-Konzept skizzieren
+- [ ] Datenbankwechsel von SQLite zu PostgreSQL konzeptionell vorbereiten
+- [ ] Produktionsnahe Docker-Variante definieren
 
----
+### Abschluss und Praesentation
 
-# 📦 Phase 3 – Datenbank & Modelle
-
-- [ ] SQLite einrichten
-- [ ] Datenbankverbindung erstellen
-- [ ] Modell „Maschine“ definieren
-- [ ] Modell „Wartung“ definieren
-
----
-
-# 🔧 Phase 4 – Maschinenverwaltung
-
-- [ ] API: Maschine erstellen (POST)
-- [ ] API: Maschinen abrufen (GET)
-- [ ] API: Maschine löschen (DELETE)
-- [ ] Daten speichern & testen
-
----
-
-# 📊 Phase 5 – Datensimulation
-
-- [ ] Temperatur simulieren
-- [ ] Laufzeit simulieren
-- [ ] Status simulieren
-- [ ] automatische Datenupdates
-
----
-
-# 📈 Phase 6 – Zustandslogik
-
-- [ ] Grenzwerte definieren
-- [ ] Status berechnen:
-  - OK
-  - Wartung
-  - kritisch
-- [ ] Logik in Backend integrieren
-
----
-
-# 🧾 Phase 7 – Wartungssystem
-
-- [ ] Wartungseinträge speichern
-- [ ] Wartungshistorie anzeigen
-- [ ] Verknüpfung mit Maschinen
-
----
-
-# 🧪 Phase 8 – Testing
-
-- [ ] API mit Postman testen
-- [ ] Fehlerbehandlung prüfen
-- [ ] Daten validieren
-- [ ] Edge Cases testen
-
----
-
-# ☁️ Phase 9 – Cloud Vorbereitung
-
-- [ ] Architektur skizzieren
-- [ ] Komponenten trennen (Backend / DB)
-- [ ] Deployment-Konzept erstellen
-
----
-
-# 🎤 Phase 10 – Abschluss & Präsentation
-
-- [ ] Präsentation vorbereiten
-- [ ] Problemstellung definieren
-- [ ] Lösung darstellen
 - [ ] Architektur visualisieren
-- [ ] Projektergebnisse zusammenfassen
+- [ ] Problemstellung und Loesung kompakt aufbereiten
+- [ ] technische Entscheidungen und Nutzen argumentieren
+- [ ] Praesentationsunterlagen vorbereiten
 
----
+## Fokus
 
-## 🎯 Ziel
-
-- strukturiertes Vorgehen
-- klare Prioritäten
-- Schritt-für-Schritt Umsetzung
-
-👉 Ziel: fertiges, präsentationsfähiges Projekt
+Der aktuelle Fokus liegt nicht mehr auf Backend-Grundlagen, sondern auf Architektur, Deployment und sauberer Projektkommunikation.

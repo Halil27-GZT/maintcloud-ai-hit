@@ -35,9 +35,9 @@ Ziel von MaintCloud AI ist die Entwicklung eines digitalen Wartungssystems, das:
 Aktueller Stand:
 
 - Projektstruktur erstellt
-- Dokumentation aufgebaut
-- Git-Repository initialisiert
-- naechste Phase: Backend-Grundgeruest
+- Backend, Frontend, Docker und CI eingerichtet
+- PostgreSQL als naechste produktionsnaehere Datenbankbasis vorbereitet
+- naechste Phase: Architektur, Deployment und weiterer Ausbau
 
 ---
 
@@ -69,6 +69,7 @@ Danach sind erreichbar:
 
 - Backend API: `http://localhost:8000`
 - Frontend: `http://localhost:5173`
+- PostgreSQL: `localhost:5432`
 
 Nuetzliche Befehle:
 
@@ -80,8 +81,8 @@ docker compose logs -f frontend
 
 Persistenz:
 
-- Die SQLite-Datenbank wird im Docker-Volume `maintcloud_data` gespeichert.
-- Im Container wird `DATABASE_URL=sqlite:////data/maintcloud.db` verwendet.
+- PostgreSQL speichert seine Daten im Docker-Volume `maintcloud_postgres_data`.
+- Im Backend-Container wird `DATABASE_URL=postgresql+psycopg://maintcloud:maintcloud@postgres:5432/maintcloud` verwendet.
 - Die Frontend-`node_modules` liegen im Docker-Volume `maintcloud_frontend_node_modules`.
 
 Nur Frontend per Docker starten:
@@ -93,8 +94,14 @@ docker compose up --build frontend
 ## Backend im Terminal starten
 
 ```bash
+set DATABASE_URL=postgresql+psycopg://maintcloud:maintcloud@localhost:5432/maintcloud
 uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+Hinweis:
+
+- Fuer lokale Tests verwendet das Projekt weiterhin SQLite.
+- Fuer den eigentlichen App-Betrieb ist jetzt PostgreSQL das bevorzugte Ziel.
 
 ## Frontend im Terminal starten
 
