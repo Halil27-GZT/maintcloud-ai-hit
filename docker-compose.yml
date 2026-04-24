@@ -27,6 +27,18 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql+psycopg://maintcloud:maintcloud@postgres:5432/maintcloud
+      LOG_LEVEL: INFO
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
   frontend:
     build:
@@ -45,14 +57,21 @@ services:
       dockerfile: Dockerfile
     container_name: maintcloud-proxy
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
     environment:
       SERVER_NAME: localhost
       HTTPS_PORT: 5443
     ports:
       - "5173:80"
       - "5443:443"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/nginx-healthz >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     volumes:
       - maintcloud_proxy_certs:/etc/nginx/certs
     restart: unless-stopped

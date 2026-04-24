@@ -1,9 +1,12 @@
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.logging_config import configure_logging
 from app.migrations import upgrade_database
+from app.monitoring import RequestLoggingMiddleware
 from app.routes import (
     health,
     machines,
@@ -15,6 +18,10 @@ from app.routes import (
 from app.services.machine_service import seed_default_machines
 
 
+configure_logging()
+logger = logging.getLogger("maintcloud.app")
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     upgrade_database()
@@ -23,9 +30,11 @@ async def lifespan(_: FastAPI):
     db = SessionLocal()
     try:
         seed_default_machines(db)
+        logger.info("application startup complete")
     finally:
         db.close()
     yield
+    logger.info("application shutdown complete")
 
 
 app = FastAPI(
@@ -47,6 +56,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(root.router)
 app.include_router(health.router)

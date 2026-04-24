@@ -61,6 +61,25 @@ def test_health():
     assert "timestamp" in data
 
 
+def test_health_live():
+    response = client.get("/health/live")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["status"] == "alive"
+    assert "timestamp" in data
+
+
+def test_health_ready():
+    response = client.get("/health/ready")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["status"] == "ready"
+    assert data["database"] == "reachable"
+    assert "timestamp" in data
+
+
 def test_get_machines():
     response = client.get("/machines")
     assert response.status_code == 200

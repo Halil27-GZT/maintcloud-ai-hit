@@ -18,6 +18,10 @@ class HealthResponse(BaseModel):
     timestamp: datetime
 
 
+class ReadinessResponse(HealthResponse):
+    database: str
+
+
 class MachineBase(BaseModel):
     id: str
     name: str
