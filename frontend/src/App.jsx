@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 
-import { API_BASE_URL, getMachines, getSensorData } from "./api";
+import {
+  API_BASE_URL,
+  getMachine,
+  getMachineMaintenanceRecords,
+  getMachineSensorData,
+  getMachines,
+  getSensorData,
+} from "./api";
 
 function mapLatestSensorData(items) {
   const latestByMachine = new Map();
@@ -53,6 +60,14 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function formatNumber(value, unit = "") {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+
+  return `${value}${unit}`;
+}
+
 function StatusBadge({ status }) {
   const tone = getStatusTone(status);
 
@@ -63,9 +78,9 @@ function StatusBadge({ status }) {
   );
 }
 
-function MachineCard({ machine, sensorEntry }) {
+function MachineCard({ machine, sensorEntry, isSelected, onSelect }) {
   return (
-    <article className="machine-card">
+    <article className={`machine-card${isSelected ? " machine-card--selected" : ""}`}>
       <div className="machine-card__header">
         <div>
           <p className="machine-card__eyebrow">{machine.id}</p>
@@ -105,7 +120,170 @@ function MachineCard({ machine, sensorEntry }) {
           <p>{sensorEntry?.recommendation ?? "Noch keine Sensordaten erfasst."}</p>
         </div>
       </div>
+
+      <button className="machine-card__action" type="button" onClick={onSelect}>
+        {isSelected ? "Details aktualisieren" : "Details ansehen"}
+      </button>
     </article>
+  );
+}
+
+function DetailMetric({ label, value }) {
+  return (
+    <div className="detail-metric">
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  );
+}
+
+function MachineDetailPanel({
+  machine,
+  latestSensorEntry,
+  sensorHistory,
+  maintenanceRecords,
+  isLoading,
+  error,
+}) {
+  const sortedHistory = [...sensorHistory].sort(
+    (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime(),
+  );
+  const latestHistoryEntry = sortedHistory[0] ?? latestSensorEntry;
+  const latestMaintenance = maintenanceRecords[0];
+
+  return (
+    <aside className="detail-panel">
+      <div className="detail-panel__header">
+        <div>
+          <p className="section-label">Maschinenansicht</p>
+          <h3>{machine.name}</h3>
+          <p className="detail-panel__subline">
+            {machine.id} · {machine.type}
+          </p>
+        </div>
+        <StatusBadge status={latestHistoryEntry?.status} />
+      </div>
+
+      {isLoading ? (
+        <section className="detail-panel__state">
+          <h4>Details werden geladen</h4>
+          <p>Sensordatenverlauf und Wartungshistorie werden nachgeladen.</p>
+        </section>
+      ) : null}
+
+      {!isLoading && error ? (
+        <section className="detail-panel__state detail-panel__state--error">
+          <h4>Detaildaten konnten nicht geladen werden</h4>
+          <p>{error}</p>
+        </section>
+      ) : null}
+
+      {!isLoading && !error ? (
+        <>
+          <section className="detail-section">
+            <div className="detail-section__heading">
+              <h4>Aktueller Zustand</h4>
+              <p>Letzter bekannter Status der ausgewaehlten Maschine.</p>
+            </div>
+            <dl className="detail-metrics">
+              <DetailMetric
+                label="Risk Score"
+                value={formatNumber(latestHistoryEntry?.risk_score)}
+              />
+              <DetailMetric
+                label="Temperatur"
+                value={formatNumber(latestHistoryEntry?.temperature, " °C")}
+              />
+              <DetailMetric
+                label="Vibration"
+                value={formatNumber(latestHistoryEntry?.vibration, " mm/s")}
+              />
+              <DetailMetric
+                label="Laufzeit"
+                value={formatNumber(latestHistoryEntry?.runtime_hours, " h")}
+              />
+              <DetailMetric
+                label="Druck"
+                value={formatNumber(latestHistoryEntry?.pressure, " bar")}
+              />
+              <DetailMetric
+                label="Letztes Update"
+                value={formatDate(latestHistoryEntry?.timestamp)}
+              />
+            </dl>
+            <div className="detail-callout">
+              <p className="machine-card__label">Empfehlung</p>
+              <p>
+                {latestHistoryEntry?.recommendation ??
+                  "Noch keine Sensordaten fuer diese Maschine vorhanden."}
+              </p>
+            </div>
+          </section>
+
+          <section className="detail-section">
+            <div className="detail-section__heading">
+              <h4>Sensordatenverlauf</h4>
+              <p>Die zuletzt erfassten Messpunkte fuer diese Maschine.</p>
+            </div>
+            {sortedHistory.length ? (
+              <div className="detail-list">
+                {sortedHistory.slice(0, 5).map((entry) => (
+                  <article className="detail-list__item" key={entry.timestamp}>
+                    <div className="detail-list__row">
+                      <strong>{formatDate(entry.timestamp)}</strong>
+                      <StatusBadge status={entry.status} />
+                    </div>
+                    <p>
+                      {entry.temperature} °C · {entry.vibration} mm/s · {entry.runtime_hours} h
+                    </p>
+                    <p className="detail-list__muted">{entry.message}</p>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="detail-panel__empty">
+                <p>Fuer diese Maschine sind noch keine Sensordaten vorhanden.</p>
+              </div>
+            )}
+          </section>
+
+          <section className="detail-section">
+            <div className="detail-section__heading">
+              <h4>Wartungshistorie</h4>
+              <p>Zuletzt dokumentierte Massnahmen und Service-Eintraege.</p>
+            </div>
+            {maintenanceRecords.length ? (
+              <div className="detail-list">
+                {maintenanceRecords.slice(0, 4).map((record) => (
+                  <article className="detail-list__item" key={record.id}>
+                    <div className="detail-list__row">
+                      <strong>{record.title}</strong>
+                      <span className="detail-chip">{record.technician}</span>
+                    </div>
+                    <p>{record.description}</p>
+                    <p className="detail-list__muted">
+                      Durchgefuehrt am {formatDate(record.performed_at)}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="detail-panel__empty">
+                <p>Fuer diese Maschine wurden noch keine Wartungseintraege erfasst.</p>
+              </div>
+            )}
+            {latestMaintenance ? (
+              <div className="detail-callout">
+                <p className="machine-card__label">Letzte dokumentierte Massnahme</p>
+                <p>
+                  {latestMaintenance.title} am {formatDate(latestMaintenance.performed_at)}
+                </p>
+              </div>
+            ) : null}
+          </section>
+        </>
+      ) : null}
+    </aside>
   );
 }
 
@@ -114,6 +292,12 @@ export default function App() {
   const [sensorData, setSensorData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedMachineId, setSelectedMachineId] = useState("");
+  const [selectedMachine, setSelectedMachine] = useState(null);
+  const [machineSensorHistory, setMachineSensorHistory] = useState([]);
+  const [maintenanceRecords, setMaintenanceRecords] = useState([]);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -134,6 +318,13 @@ export default function App() {
 
         setMachines(machineItems);
         setSensorData(sensorItems);
+        setSelectedMachineId((currentSelectedMachineId) => {
+          if (currentSelectedMachineId) {
+            return currentSelectedMachineId;
+          }
+
+          return machineItems[0]?.id ?? "";
+        });
       } catch (loadError) {
         if (!active) {
           return;
@@ -154,11 +345,65 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    if (!selectedMachineId) {
+      setSelectedMachine(null);
+      setMachineSensorHistory([]);
+      setMaintenanceRecords([]);
+      setDetailError("");
+      return () => {
+        active = false;
+      };
+    }
+
+    async function loadMachineDetails() {
+      setIsDetailLoading(true);
+      setDetailError("");
+
+      try {
+        const [machineItem, sensorItems, maintenanceItems] = await Promise.all([
+          getMachine(selectedMachineId),
+          getMachineSensorData(selectedMachineId),
+          getMachineMaintenanceRecords(selectedMachineId),
+        ]);
+
+        if (!active) {
+          return;
+        }
+
+        setSelectedMachine(machineItem);
+        setMachineSensorHistory(sensorItems);
+        setMaintenanceRecords(maintenanceItems);
+      } catch (loadError) {
+        if (!active) {
+          return;
+        }
+
+        setDetailError(loadError instanceof Error ? loadError.message : "Unknown error");
+      } finally {
+        if (active) {
+          setIsDetailLoading(false);
+        }
+      }
+    }
+
+    loadMachineDetails();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedMachineId]);
+
   const latestByMachine = mapLatestSensorData(sensorData);
   const machinesWithSensorState = machines.map((machine) => ({
     machine,
     sensorEntry: latestByMachine.get(machine.id),
   }));
+  const selectedMachineSensorEntry = selectedMachine
+    ? latestByMachine.get(selectedMachine.id)
+    : null;
 
   return (
     <div className="app-shell">
@@ -211,14 +456,29 @@ export default function App() {
         ) : null}
 
         {!isLoading && !error ? (
-          <section className="machine-grid">
-            {machinesWithSensorState.map(({ machine, sensorEntry }) => (
-              <MachineCard
-                key={machine.id}
-                machine={machine}
-                sensorEntry={sensorEntry}
+          <section className="dashboard__content">
+            <div className="machine-grid">
+              {machinesWithSensorState.map(({ machine, sensorEntry }) => (
+                <MachineCard
+                  key={machine.id}
+                  machine={machine}
+                  sensorEntry={sensorEntry}
+                  isSelected={machine.id === selectedMachineId}
+                  onSelect={() => setSelectedMachineId(machine.id)}
+                />
+              ))}
+            </div>
+
+            {selectedMachine ? (
+              <MachineDetailPanel
+                machine={selectedMachine}
+                latestSensorEntry={selectedMachineSensorEntry}
+                sensorHistory={machineSensorHistory}
+                maintenanceRecords={maintenanceRecords}
+                isLoading={isDetailLoading}
+                error={detailError}
               />
-            ))}
+            ) : null}
           </section>
         ) : null}
       </main>

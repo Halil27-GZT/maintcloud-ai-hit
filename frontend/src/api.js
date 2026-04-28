@@ -14,8 +14,22 @@ export async function getMachines() {
   return request("/machines");
 }
 
+export async function getMachine(machineId) {
+  return request(`/machines/${machineId}`);
+}
+
 export async function getSensorData() {
   const data = await request("/sensor-data");
+  return data.items;
+}
+
+export async function getMachineSensorData(machineId) {
+  const data = await request(`/machines/${machineId}/sensor-data`);
+  return data.items;
+}
+
+export async function getMachineMaintenanceRecords(machineId) {
+  const data = await request(`/machines/${machineId}/maintenance-records`);
   return data.items;
 }
 
