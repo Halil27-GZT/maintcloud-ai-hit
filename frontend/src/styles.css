@@ -270,6 +270,14 @@ code {
   border-color: rgba(56, 189, 248, 0.38);
 }
 
+.machine-card__action:disabled,
+.detail-utility-button:disabled,
+.maintenance-entry-action:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .detail-panel {
   position: sticky;
   top: 24px;
@@ -401,6 +409,27 @@ code {
 
 .detail-callout p {
   margin: 0;
+}
+
+.inline-notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(8, 15, 29, 0.72);
+  font-size: 0.94rem;
+}
+
+.inline-notice--success {
+  border-color: rgba(34, 197, 94, 0.24);
+  background: rgba(34, 197, 94, 0.12);
+  color: #dcfce7;
+}
+
+.inline-notice--error {
+  border-color: rgba(239, 68, 68, 0.24);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fecaca;
 }
 
 .detail-list {

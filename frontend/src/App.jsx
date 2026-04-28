@@ -338,6 +338,10 @@ function HistoryWindowSelector({ value, onChange }) {
   );
 }
 
+function InlineNotice({ tone = "neutral", children }) {
+  return <p className={`inline-notice inline-notice--${tone}`}>{children}</p>;
+}
+
 function MachineComposer({
   value,
   onChange,
@@ -346,6 +350,7 @@ function MachineComposer({
   editingMachineId,
   isSubmitting,
   error,
+  successMessage,
 }) {
   return (
     <form className="machine-composer" onSubmit={onSubmit}>
@@ -399,7 +404,10 @@ function MachineComposer({
         </label>
       </div>
 
-      {error ? <p className="machine-composer__error">{error}</p> : null}
+      {error ? <InlineNotice tone="error">{error}</InlineNotice> : null}
+      {!error && successMessage ? (
+        <InlineNotice tone="success">{successMessage}</InlineNotice>
+      ) : null}
 
       <div className="machine-composer__actions">
         <button className="machine-card__action" type="submit" disabled={isSubmitting}>
@@ -433,6 +441,7 @@ function MachineAdminCard({
   onDelete,
   isSubmitting,
   error,
+  successMessage,
 }) {
   return (
     <section className="machine-admin-card">
@@ -444,6 +453,7 @@ function MachineAdminCard({
         editingMachineId={editingMachineId}
         isSubmitting={isSubmitting}
         error={error}
+        successMessage={successMessage}
       />
       {editingMachineId ? (
         <div className="machine-admin-card__footer">
@@ -467,6 +477,7 @@ function SensorComposer({
   onSubmit,
   isSubmitting,
   error,
+  successMessage,
 }) {
   return (
     <form className="sensor-composer" onSubmit={onSubmit}>
@@ -537,7 +548,10 @@ function SensorComposer({
         </label>
       </div>
 
-      {error ? <p className="sensor-composer__error">{error}</p> : null}
+      {error ? <InlineNotice tone="error">{error}</InlineNotice> : null}
+      {!error && successMessage ? (
+        <InlineNotice tone="success">{successMessage}</InlineNotice>
+      ) : null}
 
       <div className="sensor-composer__actions">
         <button className="machine-card__action" type="submit" disabled={isSubmitting}>
@@ -556,6 +570,7 @@ function MaintenanceComposer({
   editingRecordId,
   isSubmitting,
   error,
+  successMessage,
 }) {
   return (
     <form className="maintenance-composer" onSubmit={onSubmit}>
@@ -619,7 +634,10 @@ function MaintenanceComposer({
         </label>
       </div>
 
-      {error ? <p className="maintenance-composer__error">{error}</p> : null}
+      {error ? <InlineNotice tone="error">{error}</InlineNotice> : null}
+      {!error && successMessage ? (
+        <InlineNotice tone="success">{successMessage}</InlineNotice>
+      ) : null}
 
       <div className="maintenance-composer__actions">
         <button className="machine-card__action" type="submit" disabled={isSubmitting}>
@@ -736,11 +754,13 @@ function MachineDetailPanel({
   editingMaintenanceRecordId,
   isMaintenanceSubmitting,
   maintenanceSubmitError,
+  maintenanceSuccessMessage,
   sensorDraft,
   onSensorDraftChange,
   onSensorSubmit,
   isSensorSubmitting,
   sensorSubmitError,
+  sensorSuccessMessage,
 }) {
   const sortedHistory = [...sensorHistory].sort(
     (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime(),
@@ -1013,6 +1033,7 @@ function MachineDetailPanel({
               onSubmit={onSensorSubmit}
               isSubmitting={isSensorSubmitting}
               error={sensorSubmitError}
+              successMessage={sensorSuccessMessage}
             />
           </section>
 
@@ -1025,6 +1046,7 @@ function MachineDetailPanel({
               editingRecordId={editingMaintenanceRecordId}
               isSubmitting={isMaintenanceSubmitting}
               error={maintenanceSubmitError}
+              successMessage={maintenanceSuccessMessage}
             />
           </section>
         </>
@@ -1043,11 +1065,13 @@ export default function App() {
   const [editingMachineId, setEditingMachineId] = useState(null);
   const [isMachineSubmitting, setIsMachineSubmitting] = useState(false);
   const [machineSubmitError, setMachineSubmitError] = useState("");
+  const [machineSuccessMessage, setMachineSuccessMessage] = useState("");
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [sensorDraft, setSensorDraft] = useState(createSensorDraft(""));
   const [isSensorSubmitting, setIsSensorSubmitting] = useState(false);
   const [sensorSubmitError, setSensorSubmitError] = useState("");
+  const [sensorSuccessMessage, setSensorSuccessMessage] = useState("");
   const [machineSensorHistory, setMachineSensorHistory] = useState([]);
   const [sensorHistoryError, setSensorHistoryError] = useState("");
   const [maintenanceRecords, setMaintenanceRecords] = useState([]);
@@ -1056,11 +1080,26 @@ export default function App() {
   const [editingMaintenanceRecordId, setEditingMaintenanceRecordId] = useState(null);
   const [isMaintenanceSubmitting, setIsMaintenanceSubmitting] = useState(false);
   const [maintenanceSubmitError, setMaintenanceSubmitError] = useState("");
+  const [maintenanceSuccessMessage, setMaintenanceSuccessMessage] = useState("");
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const [detailRequestKey, setDetailRequestKey] = useState(0);
   const [activeDetailSection, setActiveDetailSection] = useState("overview");
   const [historyWindow, setHistoryWindow] = useState("5");
+
+  useEffect(() => {
+    if (!machineSuccessMessage && !sensorSuccessMessage && !maintenanceSuccessMessage) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setMachineSuccessMessage("");
+      setSensorSuccessMessage("");
+      setMaintenanceSuccessMessage("");
+    }, 3200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [machineSuccessMessage, sensorSuccessMessage, maintenanceSuccessMessage]);
 
   useEffect(() => {
     let active = true;
@@ -1225,6 +1264,7 @@ export default function App() {
 
     setIsSensorSubmitting(true);
     setSensorSubmitError("");
+    setSensorSuccessMessage("");
 
     try {
       await createSensorData({
@@ -1238,6 +1278,7 @@ export default function App() {
 
       setSensorDraft(createSensorDraft(selectedMachine.id));
       setActiveDetailSection("history");
+      setSensorSuccessMessage("Sensordaten wurden gespeichert und der Verlauf aktualisiert.");
       setDashboardRequestKey((value) => value + 1);
       setDetailRequestKey((value) => value + 1);
     } catch (submitError) {
@@ -1254,6 +1295,7 @@ export default function App() {
 
     setIsMachineSubmitting(true);
     setMachineSubmitError("");
+    setMachineSuccessMessage("");
 
     try {
       if (editingMachineId) {
@@ -1262,9 +1304,11 @@ export default function App() {
           type: machineDraft.type,
         });
         setSelectedMachineId(editingMachineId);
+        setMachineSuccessMessage("Maschine wurde aktualisiert.");
       } else {
         const createdMachine = await createMachine(machineDraft);
         setSelectedMachineId(createdMachine.id);
+        setMachineSuccessMessage(`Maschine ${createdMachine.id} wurde angelegt.`);
       }
 
       setMachineDraft(createMachineDraft());
@@ -1285,14 +1329,25 @@ export default function App() {
       return;
     }
 
+    if (
+      !window.confirm(
+        `Maschine ${editingMachineId} wirklich loeschen? Zugehoerige Sensordaten und Wartung koennen danach fehlen.`,
+      )
+    ) {
+      return;
+    }
+
     setIsMachineSubmitting(true);
     setMachineSubmitError("");
+    setMachineSuccessMessage("");
 
     try {
+      const deletedMachineId = editingMachineId;
       await deleteMachine(editingMachineId);
       setMachineDraft(createMachineDraft());
       setEditingMachineId(null);
       setSelectedMachineId("");
+      setMachineSuccessMessage(`Maschine ${deletedMachineId} wurde geloescht.`);
       setDashboardRequestKey((value) => value + 1);
     } catch (deleteError) {
       setMachineSubmitError(
@@ -1312,6 +1367,7 @@ export default function App() {
 
     setIsMaintenanceSubmitting(true);
     setMaintenanceSubmitError("");
+    setMaintenanceSuccessMessage("");
 
     try {
       const payload = {
@@ -1324,8 +1380,10 @@ export default function App() {
 
       if (editingMaintenanceRecordId) {
         await updateMaintenanceRecord(editingMaintenanceRecordId, payload);
+        setMaintenanceSuccessMessage("Wartungseintrag wurde aktualisiert.");
       } else {
         await createMaintenanceRecord(payload);
+        setMaintenanceSuccessMessage("Wartungseintrag wurde angelegt.");
       }
 
       setMaintenanceDraft(createMaintenanceDraft(selectedMachine.id));
@@ -1342,8 +1400,17 @@ export default function App() {
   }
 
   async function handleMaintenanceDelete(record) {
+    if (
+      !window.confirm(
+        `Wartungseintrag "${record.title}" vom ${formatDate(record.performed_at)} wirklich loeschen?`,
+      )
+    ) {
+      return;
+    }
+
     setIsMaintenanceSubmitting(true);
     setMaintenanceSubmitError("");
+    setMaintenanceSuccessMessage("");
 
     try {
       await deleteMaintenanceRecord(record.id);
@@ -1354,6 +1421,7 @@ export default function App() {
       }
 
       setActiveDetailSection("maintenance");
+      setMaintenanceSuccessMessage("Wartungseintrag wurde geloescht.");
       setDetailRequestKey((value) => value + 1);
     } catch (deleteError) {
       setMaintenanceSubmitError(
@@ -1423,6 +1491,7 @@ export default function App() {
           onDelete={handleMachineDelete}
           isSubmitting={isMachineSubmitting}
           error={machineSubmitError}
+          successMessage={machineSuccessMessage}
         />
 
         {isLoading ? (
@@ -1523,6 +1592,8 @@ export default function App() {
                 editingMaintenanceRecordId={editingMaintenanceRecordId}
                 isMaintenanceSubmitting={isMaintenanceSubmitting}
                 maintenanceSubmitError={maintenanceSubmitError}
+                maintenanceSuccessMessage={maintenanceSuccessMessage}
+                sensorSuccessMessage={sensorSuccessMessage}
               />
             ) : null}
           </section>
