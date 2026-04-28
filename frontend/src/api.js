@@ -58,6 +58,14 @@ export async function getMachineSensorData(machineId) {
   return data.items;
 }
 
+export async function createSensorData(payload) {
+  const data = await request("/sensor-data", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.data;
+}
+
 export async function getMachineMaintenanceRecords(machineId) {
   const data = await request(`/machines/${machineId}/maintenance-records`);
   return data.items;

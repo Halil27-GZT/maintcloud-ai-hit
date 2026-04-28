@@ -592,12 +592,14 @@ code {
 }
 
 .machine-composer,
+.sensor-composer,
 .maintenance-composer {
   display: grid;
   gap: 16px;
 }
 
 .machine-composer__grid,
+.sensor-composer__grid,
 .maintenance-composer__grid {
   display: grid;
   gap: 12px;
@@ -612,13 +614,19 @@ code {
   gap: 12px;
 }
 
+.sensor-composer__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .machine-composer__field,
+.sensor-composer__field,
 .maintenance-composer__field {
   display: grid;
   gap: 8px;
 }
 
 .machine-composer__field span,
+.sensor-composer__field span,
 .maintenance-composer__field span {
   color: var(--text-muted);
   font-size: 0.82rem;
@@ -628,6 +636,7 @@ code {
 }
 
 .machine-composer__field input,
+.sensor-composer__field input,
 .maintenance-composer__field input,
 .maintenance-composer__field textarea {
   width: 100%;
@@ -643,6 +652,7 @@ code {
 }
 
 .machine-composer__field input:focus,
+.sensor-composer__field input:focus,
 .maintenance-composer__field input:focus,
 .maintenance-composer__field textarea:focus {
   outline: 1px solid rgba(56, 189, 248, 0.32);
@@ -653,7 +663,12 @@ code {
   grid-column: 1 / -1;
 }
 
+.sensor-composer__field--full {
+  grid-column: 1 / -1;
+}
+
 .machine-composer__actions,
+.sensor-composer__actions,
 .maintenance-composer__actions {
   display: flex;
   flex-wrap: wrap;
@@ -662,6 +677,7 @@ code {
 }
 
 .machine-composer__error,
+.sensor-composer__error,
 .maintenance-composer__error {
   margin: 0;
   color: #fecaca;
@@ -740,6 +756,10 @@ code {
   }
 
   .machine-composer__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sensor-composer__grid {
     grid-template-columns: 1fr;
   }
 

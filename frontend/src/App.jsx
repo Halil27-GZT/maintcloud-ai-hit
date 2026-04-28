@@ -4,6 +4,7 @@ import {
   API_BASE_URL,
   createMachine,
   createMaintenanceRecord,
+  createSensorData,
   deleteMachine,
   deleteMaintenanceRecord,
   getMachine,
@@ -41,6 +42,22 @@ function createMaintenanceDraft(machineId) {
     description: "",
     technician: "",
     performed_at: local,
+  };
+}
+
+function createSensorDraft(machineId) {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+
+  return {
+    machine_id: machineId,
+    temperature: "65",
+    vibration: "2.5",
+    runtime_hours: "900",
+    pressure: "2.4",
+    timestamp: local,
   };
 }
 
@@ -444,6 +461,93 @@ function MachineAdminCard({
   );
 }
 
+function SensorComposer({
+  value,
+  onChange,
+  onSubmit,
+  isSubmitting,
+  error,
+}) {
+  return (
+    <form className="sensor-composer" onSubmit={onSubmit}>
+      <div className="detail-section__heading">
+        <div>
+          <h4>Sensordaten erfassen</h4>
+          <p>Neue Messwerte direkt erfassen und die Analyse sofort aktualisieren.</p>
+        </div>
+      </div>
+
+      <div className="sensor-composer__grid">
+        <label className="sensor-composer__field">
+          <span>Temperatur</span>
+          <input
+            name="temperature"
+            type="number"
+            step="0.1"
+            value={value.temperature}
+            onChange={onChange}
+            required
+          />
+        </label>
+
+        <label className="sensor-composer__field">
+          <span>Vibration</span>
+          <input
+            name="vibration"
+            type="number"
+            step="0.1"
+            value={value.vibration}
+            onChange={onChange}
+            required
+          />
+        </label>
+
+        <label className="sensor-composer__field">
+          <span>Laufzeit</span>
+          <input
+            name="runtime_hours"
+            type="number"
+            value={value.runtime_hours}
+            onChange={onChange}
+            required
+          />
+        </label>
+
+        <label className="sensor-composer__field">
+          <span>Druck</span>
+          <input
+            name="pressure"
+            type="number"
+            step="0.1"
+            value={value.pressure}
+            onChange={onChange}
+            required
+          />
+        </label>
+
+        <label className="sensor-composer__field sensor-composer__field--full">
+          <span>Zeitstempel</span>
+          <input
+            name="timestamp"
+            type="datetime-local"
+            value={value.timestamp}
+            onChange={onChange}
+            required
+          />
+        </label>
+      </div>
+
+      {error ? <p className="sensor-composer__error">{error}</p> : null}
+
+      <div className="sensor-composer__actions">
+        <button className="machine-card__action" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Wird gespeichert..." : "Sensordaten speichern"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function MaintenanceComposer({
   value,
   onChange,
@@ -632,6 +736,11 @@ function MachineDetailPanel({
   editingMaintenanceRecordId,
   isMaintenanceSubmitting,
   maintenanceSubmitError,
+  sensorDraft,
+  onSensorDraftChange,
+  onSensorSubmit,
+  isSensorSubmitting,
+  sensorSubmitError,
 }) {
   const sortedHistory = [...sensorHistory].sort(
     (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime(),
@@ -898,6 +1007,16 @@ function MachineDetailPanel({
           </section>
 
           <section className="detail-section">
+            <SensorComposer
+              value={sensorDraft}
+              onChange={onSensorDraftChange}
+              onSubmit={onSensorSubmit}
+              isSubmitting={isSensorSubmitting}
+              error={sensorSubmitError}
+            />
+          </section>
+
+          <section className="detail-section">
             <MaintenanceComposer
               value={maintenanceDraft}
               onChange={onMaintenanceDraftChange}
@@ -926,6 +1045,9 @@ export default function App() {
   const [machineSubmitError, setMachineSubmitError] = useState("");
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [selectedMachine, setSelectedMachine] = useState(null);
+  const [sensorDraft, setSensorDraft] = useState(createSensorDraft(""));
+  const [isSensorSubmitting, setIsSensorSubmitting] = useState(false);
+  const [sensorSubmitError, setSensorSubmitError] = useState("");
   const [machineSensorHistory, setMachineSensorHistory] = useState([]);
   const [sensorHistoryError, setSensorHistoryError] = useState("");
   const [maintenanceRecords, setMaintenanceRecords] = useState([]);
@@ -991,6 +1113,8 @@ export default function App() {
 
     if (!selectedMachineId) {
       setSelectedMachine(null);
+      setSensorDraft(createSensorDraft(""));
+      setSensorSubmitError("");
       setMachineSensorHistory([]);
       setSensorHistoryError("");
       setMaintenanceRecords([]);
@@ -1026,6 +1150,20 @@ export default function App() {
         }
 
         setSelectedMachine(machineResult.value);
+        setSensorDraft((current) => ({
+          ...createSensorDraft(machineResult.value.id),
+          temperature:
+            current.machine_id === machineResult.value.id ? current.temperature : "65",
+          vibration:
+            current.machine_id === machineResult.value.id ? current.vibration : "2.5",
+          runtime_hours:
+            current.machine_id === machineResult.value.id ? current.runtime_hours : "900",
+          pressure: current.machine_id === machineResult.value.id ? current.pressure : "2.4",
+          timestamp:
+            current.machine_id === machineResult.value.id
+              ? current.timestamp
+              : createSensorDraft(machineResult.value.id).timestamp,
+        }));
         setMaintenanceDraft((current) => ({
           ...createMaintenanceDraft(machineResult.value.id),
           title: current.machine_id === machineResult.value.id ? current.title : "",
@@ -1077,6 +1215,39 @@ export default function App() {
       active = false;
     };
   }, [selectedMachineId, detailRequestKey]);
+
+  async function handleSensorSubmit(event) {
+    event.preventDefault();
+
+    if (!selectedMachine) {
+      return;
+    }
+
+    setIsSensorSubmitting(true);
+    setSensorSubmitError("");
+
+    try {
+      await createSensorData({
+        machine_id: selectedMachine.id,
+        temperature: Number(sensorDraft.temperature),
+        vibration: Number(sensorDraft.vibration),
+        runtime_hours: Number(sensorDraft.runtime_hours),
+        pressure: Number(sensorDraft.pressure),
+        timestamp: new Date(sensorDraft.timestamp).toISOString(),
+      });
+
+      setSensorDraft(createSensorDraft(selectedMachine.id));
+      setActiveDetailSection("history");
+      setDashboardRequestKey((value) => value + 1);
+      setDetailRequestKey((value) => value + 1);
+    } catch (submitError) {
+      setSensorSubmitError(
+        getErrorMessage(submitError, "Sensordaten konnten nicht gespeichert werden."),
+      );
+    } finally {
+      setIsSensorSubmitting(false);
+    }
+  }
 
   async function handleMachineSubmit(event) {
     event.preventDefault();
@@ -1315,6 +1486,16 @@ export default function App() {
                 onRefresh={() => setDetailRequestKey((value) => value + 1)}
                 historyWindow={historyWindow}
                 onHistoryWindowChange={setHistoryWindow}
+                sensorDraft={sensorDraft}
+                onSensorDraftChange={(event) =>
+                  setSensorDraft((current) => ({
+                    ...current,
+                    [event.target.name]: event.target.value,
+                  }))
+                }
+                onSensorSubmit={handleSensorSubmit}
+                isSensorSubmitting={isSensorSubmitting}
+                sensorSubmitError={sensorSubmitError}
                 maintenanceDraft={maintenanceDraft}
                 onMaintenanceDraftChange={(event) =>
                   setMaintenanceDraft((current) => ({
