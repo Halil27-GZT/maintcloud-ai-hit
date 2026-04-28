@@ -98,6 +98,53 @@ function getStatusSummary(status) {
   };
 }
 
+function getRecommendedActions(status) {
+  const tone = getStatusTone(status);
+
+  if (tone === "critical") {
+    return [
+      {
+        id: "maintenance",
+        label: "Wartung priorisieren",
+        description: "Wartungshistorie pruefen und Sofortmassnahme abstimmen.",
+      },
+      {
+        id: "history",
+        label: "Messwerte verifizieren",
+        description: "Die letzten Trendwerte und kritischen Spruenge kontrollieren.",
+      },
+    ];
+  }
+
+  if (tone === "warning") {
+    return [
+      {
+        id: "history",
+        label: "Trend beobachten",
+        description: "Verlauf der letzten Messwerte mit Fokus auf Abweichungen pruefen.",
+      },
+      {
+        id: "maintenance",
+        label: "Inspektion vorbereiten",
+        description: "Bestehende Wartungseintraege sichten und naechsten Service planen.",
+      },
+    ];
+  }
+
+  return [
+    {
+      id: "overview",
+      label: "Zustand dokumentieren",
+      description: "Aktuelle Kennzahlen und Empfehlung fuer den Regelbetrieb festhalten.",
+    },
+    {
+      id: "history",
+      label: "Verlauf beobachten",
+      description: "Trendwerte im Auge behalten, um neue Abweichungen frueh zu erkennen.",
+    },
+  ];
+}
+
 function createTrendPath(points, width, height, accessor) {
   if (points.length === 0) {
     return "";
@@ -132,17 +179,25 @@ function TrendChart({ title, points, accessor, unit, stroke }) {
   return (
     <article className="trend-card">
       <div className="trend-card__header">
-        <div>
+        <div className="trend-card__title">
           <p className="machine-card__label">{title}</p>
-          <strong>{formatNumber(latestValue, unit)}</strong>
         </div>
-        <span
-          className={`trend-card__delta${
-            delta === null ? "" : delta > 0 ? " trend-card__delta--up" : delta < 0 ? " trend-card__delta--down" : ""
-          }`}
-        >
-          {delta === null ? "kein Verlauf" : `${delta > 0 ? "+" : ""}${delta}${unit}`}
-        </span>
+        <div className="trend-card__meta">
+          <strong>{formatNumber(latestValue, unit)}</strong>
+          <span
+            className={`trend-card__delta${
+              delta === null
+                ? ""
+                : delta > 0
+                  ? " trend-card__delta--up"
+                  : delta < 0
+                    ? " trend-card__delta--down"
+                    : ""
+            }`}
+          >
+            {delta === null ? "kein Verlauf" : `${delta > 0 ? "+" : ""}${delta}${unit}`}
+          </span>
+        </div>
       </div>
       {points.length > 1 ? (
         <svg
@@ -245,6 +300,9 @@ function MachineDetailPanel({
   maintenanceRecords,
   isLoading,
   error,
+  activeSection,
+  onSectionSelect,
+  onRefresh,
 }) {
   const sortedHistory = [...sensorHistory].sort(
     (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime(),
@@ -254,6 +312,7 @@ function MachineDetailPanel({
   const latestMaintenance = maintenanceRecords[0];
   const statusSummary = getStatusSummary(latestHistoryEntry?.status);
   const detailTone = getStatusTone(latestHistoryEntry?.status);
+  const recommendedActions = getRecommendedActions(latestHistoryEntry?.status);
 
   return (
     <aside className={`detail-panel detail-panel--${detailTone}`}>
@@ -265,7 +324,12 @@ function MachineDetailPanel({
             {machine.id} - {machine.type}
           </p>
         </div>
-        <StatusBadge status={latestHistoryEntry?.status} />
+        <div className="detail-panel__header-actions">
+          <StatusBadge status={latestHistoryEntry?.status} />
+          <button className="detail-utility-button" type="button" onClick={onRefresh}>
+            Neu laden
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -279,12 +343,17 @@ function MachineDetailPanel({
         <section className="detail-panel__state detail-panel__state--error">
           <h4>Detaildaten konnten nicht geladen werden</h4>
           <p>{error}</p>
+          <button className="detail-utility-button" type="button" onClick={onRefresh}>
+            Erneut versuchen
+          </button>
         </section>
       ) : null}
 
       {!isLoading && !error ? (
         <>
-          <section className="detail-section">
+          <section
+            className={`detail-section${activeSection === "overview" ? " detail-section--active" : ""}`}
+          >
             <div className="detail-section__heading">
               <h4>Aktueller Zustand</h4>
               <p>Letzter bekannter Status der ausgewaehlten Maschine.</p>
@@ -329,6 +398,30 @@ function MachineDetailPanel({
           </section>
 
           <section className="detail-section">
+            <div className="detail-section__heading">
+              <h4>Empfohlene Aktionen</h4>
+              <p>Naechste sinnvolle Schritte basierend auf dem aktuellen Zustand.</p>
+            </div>
+            <div className="action-grid">
+              {recommendedActions.map((action) => (
+                <button
+                  key={action.id}
+                  className={`action-card${
+                    activeSection === action.id ? " action-card--active" : ""
+                  }`}
+                  type="button"
+                  onClick={() => onSectionSelect(action.id)}
+                >
+                  <strong>{action.label}</strong>
+                  <span>{action.description}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section
+            className={`detail-section${activeSection === "history" ? " detail-section--active" : ""}`}
+          >
             <div className="detail-section__heading">
               <h4>Sensordatenverlauf</h4>
               <p>Die zuletzt erfassten Messpunkte fuer diese Maschine.</p>
@@ -380,7 +473,9 @@ function MachineDetailPanel({
             )}
           </section>
 
-          <section className="detail-section">
+          <section
+            className={`detail-section${activeSection === "maintenance" ? " detail-section--active" : ""}`}
+          >
             <div className="detail-section__heading">
               <h4>Wartungshistorie</h4>
               <p>Zuletzt dokumentierte Massnahmen und Service-Eintraege.</p>
@@ -425,12 +520,15 @@ export default function App() {
   const [sensorData, setSensorData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [dashboardRequestKey, setDashboardRequestKey] = useState(0);
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [machineSensorHistory, setMachineSensorHistory] = useState([]);
   const [maintenanceRecords, setMaintenanceRecords] = useState([]);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
+  const [detailRequestKey, setDetailRequestKey] = useState(0);
+  const [activeDetailSection, setActiveDetailSection] = useState("overview");
 
   useEffect(() => {
     let active = true;
@@ -476,7 +574,7 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [dashboardRequestKey]);
 
   useEffect(() => {
     let active = true;
@@ -527,7 +625,7 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [selectedMachineId]);
+  }, [selectedMachineId, detailRequestKey]);
 
   const latestByMachine = mapLatestSensorData(sensorData);
   const machinesWithSensorState = machines.map((machine) => ({
@@ -585,6 +683,13 @@ export default function App() {
               Prüfe, ob das Backend unter <code>{API_BASE_URL}</code> läuft und
               CORS freigegeben ist.
             </p>
+            <button
+              className="detail-utility-button"
+              type="button"
+              onClick={() => setDashboardRequestKey((value) => value + 1)}
+            >
+              Erneut versuchen
+            </button>
           </section>
         ) : null}
 
@@ -597,7 +702,10 @@ export default function App() {
                   machine={machine}
                   sensorEntry={sensorEntry}
                   isSelected={machine.id === selectedMachineId}
-                  onSelect={() => setSelectedMachineId(machine.id)}
+                  onSelect={() => {
+                    setSelectedMachineId(machine.id);
+                    setActiveDetailSection("overview");
+                  }}
                 />
               ))}
             </div>
@@ -610,6 +718,9 @@ export default function App() {
                 maintenanceRecords={maintenanceRecords}
                 isLoading={isDetailLoading}
                 error={detailError}
+                activeSection={activeDetailSection}
+                onSectionSelect={setActiveDetailSection}
+                onRefresh={() => setDetailRequestKey((value) => value + 1)}
               />
             ) : null}
           </section>
