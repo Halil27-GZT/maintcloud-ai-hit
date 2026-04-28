@@ -74,6 +74,7 @@ Status: in Arbeit
 - Komponenten und Verantwortungen sauber trennen
 - Deployment-Konzept fuer Demo- und spaetere Produktivumgebung definieren
 - Kosten, Risiken und Skalierungsgrenzen grob bewerten
+- bestehende Betriebsbausteine wie Healthchecks, Logging und Migrationen einordnen
 
 Deliverables:
 
@@ -86,7 +87,7 @@ Deliverables:
 Status: geplant
 
 - Visualisierung erweitern
-- Fehlerbehandlung und Monitoring verbessern
+- Fehlerbehandlung und Betriebsmonitoring vertiefen
 - Frontend um Detailansichten und Verlaufsdaten ergaenzen
 - optional Benutzerverwaltung vorbereiten
 
@@ -115,4 +116,4 @@ Deliverables:
 1. Planungs- und Projektdokumentation auf Ist-Stand halten
 2. Cloud-Architektur und Deployment-Konzept ausarbeiten
 3. Frontend funktional vertiefen
-4. Betriebsaspekte wie Monitoring, Logging und Sicherheit vorbereiten
+4. Betriebsaspekte wie zentrales Monitoring, Sicherheit und Konfiguration weiter professionalisieren

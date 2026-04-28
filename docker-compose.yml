@@ -3,15 +3,19 @@ services:
     image: postgres:16-alpine
     container_name: maintcloud-postgres
     environment:
-      POSTGRES_DB: maintcloud
-      POSTGRES_USER: maintcloud
-      POSTGRES_PASSWORD: maintcloud
+      POSTGRES_DB: ${POSTGRES_DB:-maintcloud}
+      POSTGRES_USER: ${POSTGRES_USER:-maintcloud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-maintcloud}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - maintcloud_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U maintcloud -d maintcloud"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-maintcloud} -d ${POSTGRES_DB:-maintcloud}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,8 +30,8 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql+psycopg://maintcloud:maintcloud@postgres:5432/maintcloud
-      LOG_LEVEL: INFO
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-maintcloud}:${POSTGRES_PASSWORD:-maintcloud}@postgres:5432/${POSTGRES_DB:-maintcloud}
+      LOG_LEVEL: ${BACKEND_LOG_LEVEL:-INFO}
     healthcheck:
       test:
         [
@@ -46,7 +50,7 @@ services:
       dockerfile: Dockerfile
       target: production
       args:
-        VITE_API_BASE_URL: /api
+        VITE_API_BASE_URL: ${FRONTEND_DOCKER_API_BASE_URL:-/api}
     container_name: maintcloud-frontend
     depends_on:
       - backend
@@ -62,11 +66,11 @@ services:
       backend:
         condition: service_healthy
     environment:
-      SERVER_NAME: localhost
-      HTTPS_PORT: 5443
+      SERVER_NAME: ${SERVER_NAME:-localhost}
+      HTTPS_PORT: ${PROXY_HTTPS_PORT:-5443}
     ports:
-      - "5173:80"
-      - "5443:443"
+      - "${PROXY_HTTP_PORT:-5173}:80"
+      - "${PROXY_HTTPS_PORT:-5443}:443"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/nginx-healthz >/dev/null 2>&1"]
       interval: 15s

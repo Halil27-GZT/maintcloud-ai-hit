@@ -16,12 +16,12 @@ Dieses Kanban Board spiegelt den aktuellen Projektstand wider und dient als einf
 ## To Do
 
 - Komponenten und Datenfluesse visualisieren
-- Risiken, Kosten und Skalierung bewerten
-- produktionsnaechste Zielarchitektur mit PostgreSQL beschreiben
+- zentrales Monitoring- und Alarmierungskonzept skizzieren
+- Compose- und Umgebungswerte weiter entkoppeln
 
 ## In Progress
 
-- Architektur und Deployment fuer Praesentation weiter verdichten
+- Frontend-naechste Ausbaustufe priorisieren
 
 ## Review / Test
 
@@ -46,6 +46,8 @@ Dieses Kanban Board spiegelt den aktuellen Projektstand wider und dient als einf
 - Start ueber Docker Desktop erfolgreich getestet
 - Cloud-Architektur dokumentiert
 - Demo-Deployment-Konzept dokumentiert
+- Backup- und Restore-Konzept dokumentiert
+- Umgebungs- und Secrets-Konzept dokumentiert
 
 ## Nutzung
 

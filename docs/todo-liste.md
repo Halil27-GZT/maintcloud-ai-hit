@@ -30,8 +30,9 @@ Diese ToDo-Liste bildet den aktuellen technischen Stand des Projekts ab und prio
 - [x] Roadmap, ToDo-Liste und Kanban auf Ist-Stand bringen
 - [x] Cloud-Architektur dokumentieren
 - [x] Deployment-Konzept fuer Demo-Betrieb beschreiben
-- [ ] Komponenten sauber abgrenzen: Frontend, Backend, Datenbank, Volumes
-- [ ] Risiken und Skalierung kurz bewerten
+- [x] Komponenten sauber abgrenzen: Frontend, Backend, Datenbank, Volumes
+- [x] Risiken und Skalierung kurz bewerten
+- [x] Doku mit tatsaechlichem Compose- und Proxy-Setup konsistent halten
 
 ### Phase 6 - Produktnaechste Erweiterungen
 
@@ -42,10 +43,14 @@ Diese ToDo-Liste bildet den aktuellen technischen Stand des Projekts ab und prio
 
 ### Qualitaet und Betrieb
 
-- [ ] README final sprachlich bereinigen
-- [ ] Logging- und Monitoring-Konzept skizzieren
-- [ ] Datenbankwechsel von SQLite zu PostgreSQL konzeptionell vorbereiten
-- [ ] Produktionsnahe Docker-Variante definieren
+- [x] README auf aktuellen Architektur- und Betriebsstand anpassen
+- [x] Logging- und Monitoring-Grundlagen mit Healthchecks und Request Logging anlegen
+- [x] Datenbankwechsel von SQLite zu PostgreSQL konzeptionell vorbereiten
+- [x] produktionsnaehere Docker-Variante mit Reverse Proxy und HTTPS definieren
+- [x] Backup- und Restore-Konzept fuer PostgreSQL dokumentieren
+- [x] Umgebungs- und Secrets-Konzept dokumentieren
+- [ ] zentrales Monitoring und Alarmierungskonzept ergaenzen
+- [x] Compose- und Umgebungswerte weiter entkoppeln
 
 ### Abschluss und Praesentation
 

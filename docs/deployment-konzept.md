@@ -24,6 +24,8 @@ Nicht gedacht als finale Produktionsarchitektur.
 - Backend als eigener Container
 - PostgreSQL-Datenbank ueber Docker-Volume
 - Docker Compose als Start- und Orchestrierungswerkzeug
+- Healthchecks fuer PostgreSQL, Backend und Proxy
+- Alembic-Migrationen beim Start des Backends
 
 ## Warum dieses Deployment sinnvoll ist
 
@@ -47,6 +49,12 @@ Reverse Proxy unter Port 5173
   v
 PostgreSQL im persistierten Docker-Volume
 ```
+
+Im aktuellen lokalen Stack gilt zusaetzlich:
+
+- `http://localhost:5173` leitet auf `https://localhost:5443` weiter
+- `https://localhost:5443` ist der eigentliche Hauptzugang
+- `/api`, `/docs` und `/health` laufen hinter dem Reverse Proxy
 
 ## Deployment-Ablauf
 
@@ -99,18 +107,21 @@ Nachteile:
 - Zugangsdaten und Betriebsparameter muessen sauber gepflegt werden
 - spaetere Backups und Monitoring werden wichtiger
 
+Schema-Aenderungen werden bereits ueber Alembic vorbereitet und beim Start der Anwendung auf den aktuellen Stand gebracht.
+
 ## Risiken und Einschraenkungen
 
 ### Technische Risiken
 
 - lokal wird ein selbstsigniertes Zertifikat verwendet
-- noch keine dedizierte Migrationslogik fuer spaetere Schema-Aenderungen
+- noch keine zentrale Log-Aggregation oder Alarmierung
+- Konfiguration und Secrets sind noch nicht fuer einen echten Mehrumgebungsbetrieb getrennt
 
 ### Organisatorische Risiken
 
 - Betrieb haengt von einem einzelnen Server ab
 - noch kein geregeltes Backup-Konzept
-- noch kein Monitoring oder Alarmierung
+- Monitoring ist nur auf Basis von Healthchecks vorhanden, nicht als vollwertige Betriebsueberwachung
 
 ## Empfohlene Mindestmassnahmen fuer Demo-Betrieb
 
@@ -118,16 +129,18 @@ Nachteile:
 - klare Start- und Stop-Prozedur
 - Dokumentation der benoetigten Ports
 - Test der Anwendung vor jeder Vorfuehrung
+- Health-Endpunkte und Container-Status vor Demos pruefen
+- Backend-Logs bei Fehlern gezielt auswerten
 
 ## Naechster Ausbauschritt Richtung produktionsnah
 
 Der erste sinnvolle Ausbau nach dem aktuellen PostgreSQL-Demo-Deployment waere:
 
 1. echte TLS-Zertifikate auf dem Reverse Proxy einbinden
-2. Monitoring und Logging ergaenzen
-3. Datenmigrationen sauber einfuehren
+2. Konfiguration und Secrets fuer getrennte Umgebungen absichern
+3. Monitoring und Log-Aggregation ueber die bestehenden Healthchecks hinaus ergaenzen
 4. getrennte Konfiguration fuer Entwicklung und Deployment
 
 ## Kurzfassung fuer Praesentation
 
-MaintCloud AI kann bereits heute als Demo-System auf einem einzelnen Server mit Docker Compose und PostgreSQL betrieben werden. Ein Reverse Proxy bildet den zentralen Einstiegspunkt, das Frontend wird als Build ueber einen Webserver ausgeliefert, und die API laeuft dahinter getrennt. HTTPS ist lokal bereits vorbereitet, verwendet aber noch ein selbstsigniertes Zertifikat. Fuer den naechsten produktionsnaeheren Schritt fehlen vor allem vertrauenswuerdige Zertifikate und ein sauberes Migrationskonzept.
+MaintCloud AI kann bereits heute als Demo-System auf einem einzelnen Server mit Docker Compose und PostgreSQL betrieben werden. Ein Reverse Proxy bildet den zentralen Einstiegspunkt, das Frontend wird als Build ueber einen Webserver ausgeliefert, und die API laeuft dahinter getrennt. Healthchecks, Request Logging und Alembic-Migrationen sind bereits vorhanden. HTTPS ist lokal vorbereitet, verwendet aber noch ein selbstsigniertes Zertifikat. Fuer den naechsten produktionsnaeheren Schritt fehlen vor allem vertrauenswuerdige Zertifikate, saubere Umgebungs- und Secret-Trennung sowie erweitertes Betriebsmonitoring.
