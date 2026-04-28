@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 
 import {
   API_BASE_URL,
+  createMaintenanceRecord,
+  deleteMaintenanceRecord,
   getMachine,
   getMachineMaintenanceRecords,
   getMachineSensorData,
   getMachines,
   getSensorData,
+  updateMaintenanceRecord,
 } from "./api";
 
 const HISTORY_WINDOW_OPTIONS = [
@@ -14,6 +17,35 @@ const HISTORY_WINDOW_OPTIONS = [
   { id: "5", label: "5 Werte", limit: 5 },
   { id: "all", label: "Alle", limit: null },
 ];
+
+function createMaintenanceDraft(machineId) {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+
+  return {
+    machine_id: machineId,
+    title: "",
+    description: "",
+    technician: "",
+    performed_at: local,
+  };
+}
+
+function createMaintenanceDraftFromRecord(record) {
+  const local = new Date(new Date(record.performed_at).getTime() - new Date(record.performed_at).getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+
+  return {
+    machine_id: record.machine_id,
+    title: record.title,
+    description: record.description,
+    technician: record.technician,
+    performed_at: local,
+  };
+}
 
 function mapLatestSensorData(items) {
   const latestByMachine = new Map();
@@ -151,6 +183,10 @@ function getRecommendedActions(status) {
   ];
 }
 
+function getErrorMessage(error, fallback) {
+  return error instanceof Error ? error.message : fallback;
+}
+
 function getHistoryWindowLabel(windowId) {
   const option = HISTORY_WINDOW_OPTIONS.find((item) => item.id === windowId);
   return option?.label ?? "Alle";
@@ -274,6 +310,102 @@ function HistoryWindowSelector({ value, onChange }) {
   );
 }
 
+function MaintenanceComposer({
+  value,
+  onChange,
+  onSubmit,
+  onCancelEdit,
+  editingRecordId,
+  isSubmitting,
+  error,
+}) {
+  return (
+    <form className="maintenance-composer" onSubmit={onSubmit}>
+      <div className="detail-section__heading">
+        <div>
+          <h4>{editingRecordId ? "Wartung bearbeiten" : "Wartung eintragen"}</h4>
+          <p>
+            {editingRecordId
+              ? "Bestehenden Service-Eintrag aktualisieren."
+              : "Direkt aus der Detailansicht einen neuen Service-Eintrag erfassen."}
+          </p>
+        </div>
+      </div>
+
+      <div className="maintenance-composer__grid">
+        <label className="maintenance-composer__field">
+          <span>Titel</span>
+          <input
+            name="title"
+            type="text"
+            value={value.title}
+            onChange={onChange}
+            placeholder="z. B. Lager geprueft"
+            required
+          />
+        </label>
+
+        <label className="maintenance-composer__field">
+          <span>Techniker</span>
+          <input
+            name="technician"
+            type="text"
+            value={value.technician}
+            onChange={onChange}
+            placeholder="Name oder Team"
+            required
+          />
+        </label>
+
+        <label className="maintenance-composer__field maintenance-composer__field--full">
+          <span>Beschreibung</span>
+          <textarea
+            name="description"
+            rows="3"
+            value={value.description}
+            onChange={onChange}
+            placeholder="Kurz beschreiben, was durchgefuehrt wurde."
+            required
+          />
+        </label>
+
+        <label className="maintenance-composer__field">
+          <span>Durchgefuehrt am</span>
+          <input
+            name="performed_at"
+            type="datetime-local"
+            value={value.performed_at}
+            onChange={onChange}
+            required
+          />
+        </label>
+      </div>
+
+      {error ? <p className="maintenance-composer__error">{error}</p> : null}
+
+      <div className="maintenance-composer__actions">
+        <button className="machine-card__action" type="submit" disabled={isSubmitting}>
+          {isSubmitting
+            ? "Wird gespeichert..."
+            : editingRecordId
+              ? "Wartung aktualisieren"
+              : "Wartung speichern"}
+        </button>
+        {editingRecordId ? (
+          <button
+            className="detail-utility-button"
+            type="button"
+            onClick={onCancelEdit}
+            disabled={isSubmitting}
+          >
+            Bearbeitung abbrechen
+          </button>
+        ) : null}
+      </div>
+    </form>
+  );
+}
+
 function StatusBadge({ status }) {
   const tone = getStatusTone(status);
 
@@ -347,7 +479,9 @@ function MachineDetailPanel({
   machine,
   latestSensorEntry,
   sensorHistory,
+  sensorHistoryError,
   maintenanceRecords,
+  maintenanceError,
   isLoading,
   error,
   activeSection,
@@ -355,6 +489,15 @@ function MachineDetailPanel({
   onRefresh,
   historyWindow,
   onHistoryWindowChange,
+  maintenanceDraft,
+  onMaintenanceDraftChange,
+  onMaintenanceSubmit,
+  onMaintenanceCancelEdit,
+  onMaintenanceEdit,
+  onMaintenanceDelete,
+  editingMaintenanceRecordId,
+  isMaintenanceSubmitting,
+  maintenanceSubmitError,
 }) {
   const sortedHistory = [...sensorHistory].sort(
     (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime(),
@@ -486,7 +629,16 @@ function MachineDetailPanel({
               </div>
               <HistoryWindowSelector value={historyWindow} onChange={onHistoryWindowChange} />
             </div>
-            {trendHistory.length ? (
+            {sensorHistoryError ? (
+              <div className="detail-panel__state detail-panel__state--error">
+                <h4>Verlauf aktuell nicht verfuegbar</h4>
+                <p>{sensorHistoryError}</p>
+                <button className="detail-utility-button" type="button" onClick={onRefresh}>
+                  Verlauf erneut laden
+                </button>
+              </div>
+            ) : null}
+            {!sensorHistoryError && trendHistory.length ? (
               <div className="trend-grid">
                 <TrendChart
                   title="Temperatur"
@@ -511,7 +663,7 @@ function MachineDetailPanel({
                 />
               </div>
             ) : null}
-            {visibleHistory.length ? (
+            {!sensorHistoryError && visibleHistory.length ? (
               <div className="detail-list">
                 {visibleHistory.map((entry) => (
                   <article className="detail-list__item" key={entry.timestamp}>
@@ -538,11 +690,12 @@ function MachineDetailPanel({
                   </article>
                 ))}
               </div>
-            ) : (
+            ) : null}
+            {!sensorHistoryError && !visibleHistory.length ? (
               <div className="detail-panel__empty">
                 <p>Fuer diese Maschine sind noch keine Sensordaten vorhanden.</p>
               </div>
-            )}
+            ) : null}
           </section>
 
           <section
@@ -552,27 +705,55 @@ function MachineDetailPanel({
               <h4>Wartungshistorie</h4>
               <p>Zuletzt dokumentierte Massnahmen und Service-Eintraege.</p>
             </div>
-            {maintenanceRecords.length ? (
+            {maintenanceError ? (
+              <div className="detail-panel__state detail-panel__state--error">
+                <h4>Wartungshistorie aktuell nicht verfuegbar</h4>
+                <p>{maintenanceError}</p>
+                <button className="detail-utility-button" type="button" onClick={onRefresh}>
+                  Wartung erneut laden
+                </button>
+              </div>
+            ) : null}
+            {!maintenanceError && maintenanceRecords.length ? (
               <div className="detail-list">
                 {maintenanceRecords.slice(0, 4).map((record) => (
                   <article className="detail-list__item" key={record.id}>
                     <div className="detail-list__row">
-                      <strong>{record.title}</strong>
-                      <span className="detail-chip">{record.technician}</span>
+                      <div>
+                        <strong>{record.title}</strong>
+                        <p className="detail-list__muted">
+                          Durchgefuehrt am {formatDate(record.performed_at)}
+                        </p>
+                      </div>
+                      <div className="detail-list__tags">
+                        <span className="detail-chip">{record.technician}</span>
+                        <button
+                          className="maintenance-entry-action"
+                          type="button"
+                          onClick={() => onMaintenanceEdit(record)}
+                        >
+                          Bearbeiten
+                        </button>
+                        <button
+                          className="maintenance-entry-action maintenance-entry-action--danger"
+                          type="button"
+                          onClick={() => onMaintenanceDelete(record)}
+                        >
+                          Loeschen
+                        </button>
+                      </div>
                     </div>
                     <p>{record.description}</p>
-                    <p className="detail-list__muted">
-                      Durchgefuehrt am {formatDate(record.performed_at)}
-                    </p>
                   </article>
                 ))}
               </div>
-            ) : (
+            ) : null}
+            {!maintenanceError && !maintenanceRecords.length ? (
               <div className="detail-panel__empty">
                 <p>Fuer diese Maschine wurden noch keine Wartungseintraege erfasst.</p>
               </div>
-            )}
-            {latestMaintenance ? (
+            ) : null}
+            {!maintenanceError && latestMaintenance ? (
               <div className="detail-callout">
                 <p className="machine-card__label">Letzte dokumentierte Massnahme</p>
                 <p>
@@ -580,6 +761,18 @@ function MachineDetailPanel({
                 </p>
               </div>
             ) : null}
+          </section>
+
+          <section className="detail-section">
+            <MaintenanceComposer
+              value={maintenanceDraft}
+              onChange={onMaintenanceDraftChange}
+              onSubmit={onMaintenanceSubmit}
+              onCancelEdit={onMaintenanceCancelEdit}
+              editingRecordId={editingMaintenanceRecordId}
+              isSubmitting={isMaintenanceSubmitting}
+              error={maintenanceSubmitError}
+            />
           </section>
         </>
       ) : null}
@@ -596,7 +789,13 @@ export default function App() {
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [machineSensorHistory, setMachineSensorHistory] = useState([]);
+  const [sensorHistoryError, setSensorHistoryError] = useState("");
   const [maintenanceRecords, setMaintenanceRecords] = useState([]);
+  const [maintenanceError, setMaintenanceError] = useState("");
+  const [maintenanceDraft, setMaintenanceDraft] = useState(createMaintenanceDraft(""));
+  const [editingMaintenanceRecordId, setEditingMaintenanceRecordId] = useState(null);
+  const [isMaintenanceSubmitting, setIsMaintenanceSubmitting] = useState(false);
+  const [maintenanceSubmitError, setMaintenanceSubmitError] = useState("");
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const [detailRequestKey, setDetailRequestKey] = useState(0);
@@ -655,7 +854,12 @@ export default function App() {
     if (!selectedMachineId) {
       setSelectedMachine(null);
       setMachineSensorHistory([]);
+      setSensorHistoryError("");
       setMaintenanceRecords([]);
+      setMaintenanceError("");
+      setMaintenanceDraft(createMaintenanceDraft(""));
+      setEditingMaintenanceRecordId(null);
+      setMaintenanceSubmitError("");
       setDetailError("");
       return () => {
         active = false;
@@ -665,9 +869,11 @@ export default function App() {
     async function loadMachineDetails() {
       setIsDetailLoading(true);
       setDetailError("");
+      setSensorHistoryError("");
+      setMaintenanceError("");
 
       try {
-        const [machineItem, sensorItems, maintenanceItems] = await Promise.all([
+        const [machineResult, sensorResult, maintenanceResult] = await Promise.allSettled([
           getMachine(selectedMachineId),
           getMachineSensorData(selectedMachineId),
           getMachineMaintenanceRecords(selectedMachineId),
@@ -677,15 +883,49 @@ export default function App() {
           return;
         }
 
-        setSelectedMachine(machineItem);
-        setMachineSensorHistory(sensorItems);
-        setMaintenanceRecords(maintenanceItems);
+        if (machineResult.status === "rejected") {
+          throw machineResult.reason;
+        }
+
+        setSelectedMachine(machineResult.value);
+        setMaintenanceDraft((current) => ({
+          ...createMaintenanceDraft(machineResult.value.id),
+          title: current.machine_id === machineResult.value.id ? current.title : "",
+          description:
+            current.machine_id === machineResult.value.id ? current.description : "",
+          technician: current.machine_id === machineResult.value.id ? current.technician : "",
+          performed_at:
+            current.machine_id === machineResult.value.id
+              ? current.performed_at
+              : createMaintenanceDraft(machineResult.value.id).performed_at,
+        }));
+
+        if (sensorResult.status === "fulfilled") {
+          setMachineSensorHistory(sensorResult.value);
+        } else {
+          setMachineSensorHistory([]);
+          setSensorHistoryError(
+            getErrorMessage(sensorResult.reason, "Sensordaten konnten nicht geladen werden."),
+          );
+        }
+
+        if (maintenanceResult.status === "fulfilled") {
+          setMaintenanceRecords(maintenanceResult.value);
+        } else {
+          setMaintenanceRecords([]);
+          setMaintenanceError(
+            getErrorMessage(
+              maintenanceResult.reason,
+              "Wartungseintraege konnten nicht geladen werden.",
+            ),
+          );
+        }
       } catch (loadError) {
         if (!active) {
           return;
         }
 
-        setDetailError(loadError instanceof Error ? loadError.message : "Unknown error");
+        setDetailError(getErrorMessage(loadError, "Unknown error"));
       } finally {
         if (active) {
           setIsDetailLoading(false);
@@ -699,6 +939,67 @@ export default function App() {
       active = false;
     };
   }, [selectedMachineId, detailRequestKey]);
+
+  async function handleMaintenanceSubmit(event) {
+    event.preventDefault();
+
+    if (!selectedMachine) {
+      return;
+    }
+
+    setIsMaintenanceSubmitting(true);
+    setMaintenanceSubmitError("");
+
+    try {
+      const payload = {
+        machine_id: selectedMachine.id,
+        title: maintenanceDraft.title,
+        description: maintenanceDraft.description,
+        technician: maintenanceDraft.technician,
+        performed_at: new Date(maintenanceDraft.performed_at).toISOString(),
+      };
+
+      if (editingMaintenanceRecordId) {
+        await updateMaintenanceRecord(editingMaintenanceRecordId, payload);
+      } else {
+        await createMaintenanceRecord(payload);
+      }
+
+      setMaintenanceDraft(createMaintenanceDraft(selectedMachine.id));
+      setEditingMaintenanceRecordId(null);
+      setActiveDetailSection("maintenance");
+      setDetailRequestKey((value) => value + 1);
+    } catch (submitError) {
+      setMaintenanceSubmitError(
+        getErrorMessage(submitError, "Wartungseintrag konnte nicht gespeichert werden."),
+      );
+    } finally {
+      setIsMaintenanceSubmitting(false);
+    }
+  }
+
+  async function handleMaintenanceDelete(record) {
+    setIsMaintenanceSubmitting(true);
+    setMaintenanceSubmitError("");
+
+    try {
+      await deleteMaintenanceRecord(record.id);
+
+      if (editingMaintenanceRecordId === record.id && selectedMachine) {
+        setMaintenanceDraft(createMaintenanceDraft(selectedMachine.id));
+        setEditingMaintenanceRecordId(null);
+      }
+
+      setActiveDetailSection("maintenance");
+      setDetailRequestKey((value) => value + 1);
+    } catch (deleteError) {
+      setMaintenanceSubmitError(
+        getErrorMessage(deleteError, "Wartungseintrag konnte nicht geloescht werden."),
+      );
+    } finally {
+      setIsMaintenanceSubmitting(false);
+    }
+  }
 
   const latestByMachine = mapLatestSensorData(sensorData);
   const machinesWithSensorState = machines.map((machine) => ({
@@ -789,7 +1090,9 @@ export default function App() {
                 machine={selectedMachine}
                 latestSensorEntry={selectedMachineSensorEntry}
                 sensorHistory={machineSensorHistory}
+                sensorHistoryError={sensorHistoryError}
                 maintenanceRecords={maintenanceRecords}
+                maintenanceError={maintenanceError}
                 isLoading={isDetailLoading}
                 error={detailError}
                 activeSection={activeDetailSection}
@@ -797,6 +1100,33 @@ export default function App() {
                 onRefresh={() => setDetailRequestKey((value) => value + 1)}
                 historyWindow={historyWindow}
                 onHistoryWindowChange={setHistoryWindow}
+                maintenanceDraft={maintenanceDraft}
+                onMaintenanceDraftChange={(event) =>
+                  setMaintenanceDraft((current) => ({
+                    ...current,
+                    [event.target.name]: event.target.value,
+                  }))
+                }
+                onMaintenanceSubmit={handleMaintenanceSubmit}
+                onMaintenanceCancelEdit={() => {
+                  if (!selectedMachine) {
+                    return;
+                  }
+
+                  setMaintenanceDraft(createMaintenanceDraft(selectedMachine.id));
+                  setEditingMaintenanceRecordId(null);
+                  setMaintenanceSubmitError("");
+                }}
+                onMaintenanceEdit={(record) => {
+                  setEditingMaintenanceRecordId(record.id);
+                  setMaintenanceDraft(createMaintenanceDraftFromRecord(record));
+                  setActiveDetailSection("maintenance");
+                  setMaintenanceSubmitError("");
+                }}
+                onMaintenanceDelete={handleMaintenanceDelete}
+                editingMaintenanceRecordId={editingMaintenanceRecordId}
+                isMaintenanceSubmitting={isMaintenanceSubmitting}
+                maintenanceSubmitError={maintenanceSubmitError}
               />
             ) : null}
           </section>
