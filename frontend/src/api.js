@@ -24,6 +24,30 @@ export async function getMachine(machineId) {
   return request(`/machines/${machineId}`);
 }
 
+export async function createMachine(payload) {
+  return request("/machines", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateMachine(machineId, payload) {
+  return request(`/machines/${machineId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteMachine(machineId) {
+  const response = await fetch(`${API_BASE_URL}/machines/${machineId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed with status ${response.status}`);
+  }
+}
+
 export async function getSensorData() {
   const data = await request("/sensor-data");
   return data.items;

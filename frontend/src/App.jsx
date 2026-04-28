@@ -2,13 +2,16 @@ import { useEffect, useState } from "react";
 
 import {
   API_BASE_URL,
+  createMachine,
   createMaintenanceRecord,
+  deleteMachine,
   deleteMaintenanceRecord,
   getMachine,
   getMachineMaintenanceRecords,
   getMachineSensorData,
   getMachines,
   getSensorData,
+  updateMachine,
   updateMaintenanceRecord,
 } from "./api";
 
@@ -17,6 +20,14 @@ const HISTORY_WINDOW_OPTIONS = [
   { id: "5", label: "5 Werte", limit: 5 },
   { id: "all", label: "Alle", limit: null },
 ];
+
+function createMachineDraft() {
+  return {
+    id: "",
+    name: "",
+    type: "",
+  };
+}
 
 function createMaintenanceDraft(machineId) {
   const now = new Date();
@@ -307,6 +318,129 @@ function HistoryWindowSelector({ value, onChange }) {
         </button>
       ))}
     </div>
+  );
+}
+
+function MachineComposer({
+  value,
+  onChange,
+  onSubmit,
+  onCancelEdit,
+  editingMachineId,
+  isSubmitting,
+  error,
+}) {
+  return (
+    <form className="machine-composer" onSubmit={onSubmit}>
+      <div className="detail-section__heading">
+        <div>
+          <h4>{editingMachineId ? "Maschine bearbeiten" : "Maschine anlegen"}</h4>
+          <p>
+            {editingMachineId
+              ? "Stammdaten der ausgewaehlten Maschine aktualisieren."
+              : "Neue Maschine direkt in der Uebersicht erfassen."}
+          </p>
+        </div>
+      </div>
+
+      <div className="machine-composer__grid">
+        <label className="machine-composer__field">
+          <span>ID</span>
+          <input
+            name="id"
+            type="text"
+            value={value.id}
+            onChange={onChange}
+            placeholder="z. B. M-2001"
+            disabled={Boolean(editingMachineId)}
+            required
+          />
+        </label>
+
+        <label className="machine-composer__field">
+          <span>Name</span>
+          <input
+            name="name"
+            type="text"
+            value={value.name}
+            onChange={onChange}
+            placeholder="z. B. Laser Cutter"
+            required
+          />
+        </label>
+
+        <label className="machine-composer__field">
+          <span>Typ</span>
+          <input
+            name="type"
+            type="text"
+            value={value.type}
+            onChange={onChange}
+            placeholder="z. B. Cutter"
+            required
+          />
+        </label>
+      </div>
+
+      {error ? <p className="machine-composer__error">{error}</p> : null}
+
+      <div className="machine-composer__actions">
+        <button className="machine-card__action" type="submit" disabled={isSubmitting}>
+          {isSubmitting
+            ? "Wird gespeichert..."
+            : editingMachineId
+              ? "Maschine aktualisieren"
+              : "Maschine speichern"}
+        </button>
+        {editingMachineId ? (
+          <button
+            className="detail-utility-button"
+            type="button"
+            onClick={onCancelEdit}
+            disabled={isSubmitting}
+          >
+            Bearbeitung abbrechen
+          </button>
+        ) : null}
+      </div>
+    </form>
+  );
+}
+
+function MachineAdminCard({
+  value,
+  onChange,
+  onSubmit,
+  onCancelEdit,
+  editingMachineId,
+  onDelete,
+  isSubmitting,
+  error,
+}) {
+  return (
+    <section className="machine-admin-card">
+      <MachineComposer
+        value={value}
+        onChange={onChange}
+        onSubmit={onSubmit}
+        onCancelEdit={onCancelEdit}
+        editingMachineId={editingMachineId}
+        isSubmitting={isSubmitting}
+        error={error}
+      />
+      {editingMachineId ? (
+        <div className="machine-admin-card__footer">
+          <button
+            className="maintenance-entry-action maintenance-entry-action--danger"
+            type="button"
+            onClick={onDelete}
+            disabled={isSubmitting}
+          >
+            Maschine loeschen
+          </button>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -786,6 +920,10 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [dashboardRequestKey, setDashboardRequestKey] = useState(0);
+  const [machineDraft, setMachineDraft] = useState(createMachineDraft());
+  const [editingMachineId, setEditingMachineId] = useState(null);
+  const [isMachineSubmitting, setIsMachineSubmitting] = useState(false);
+  const [machineSubmitError, setMachineSubmitError] = useState("");
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [machineSensorHistory, setMachineSensorHistory] = useState([]);
@@ -940,6 +1078,60 @@ export default function App() {
     };
   }, [selectedMachineId, detailRequestKey]);
 
+  async function handleMachineSubmit(event) {
+    event.preventDefault();
+
+    setIsMachineSubmitting(true);
+    setMachineSubmitError("");
+
+    try {
+      if (editingMachineId) {
+        await updateMachine(editingMachineId, {
+          name: machineDraft.name,
+          type: machineDraft.type,
+        });
+        setSelectedMachineId(editingMachineId);
+      } else {
+        const createdMachine = await createMachine(machineDraft);
+        setSelectedMachineId(createdMachine.id);
+      }
+
+      setMachineDraft(createMachineDraft());
+      setEditingMachineId(null);
+      setDashboardRequestKey((value) => value + 1);
+      setDetailRequestKey((value) => value + 1);
+    } catch (submitError) {
+      setMachineSubmitError(
+        getErrorMessage(submitError, "Maschine konnte nicht gespeichert werden."),
+      );
+    } finally {
+      setIsMachineSubmitting(false);
+    }
+  }
+
+  async function handleMachineDelete() {
+    if (!editingMachineId) {
+      return;
+    }
+
+    setIsMachineSubmitting(true);
+    setMachineSubmitError("");
+
+    try {
+      await deleteMachine(editingMachineId);
+      setMachineDraft(createMachineDraft());
+      setEditingMachineId(null);
+      setSelectedMachineId("");
+      setDashboardRequestKey((value) => value + 1);
+    } catch (deleteError) {
+      setMachineSubmitError(
+        getErrorMessage(deleteError, "Maschine konnte nicht geloescht werden."),
+      );
+    } finally {
+      setIsMachineSubmitting(false);
+    }
+  }
+
   async function handleMaintenanceSubmit(event) {
     event.preventDefault();
 
@@ -1042,6 +1234,26 @@ export default function App() {
           </div>
         </section>
 
+        <MachineAdminCard
+          value={machineDraft}
+          onChange={(event) =>
+            setMachineDraft((current) => ({
+              ...current,
+              [event.target.name]: event.target.value,
+            }))
+          }
+          onSubmit={handleMachineSubmit}
+          onCancelEdit={() => {
+            setMachineDraft(createMachineDraft());
+            setEditingMachineId(null);
+            setMachineSubmitError("");
+          }}
+          editingMachineId={editingMachineId}
+          onDelete={handleMachineDelete}
+          isSubmitting={isMachineSubmitting}
+          error={machineSubmitError}
+        />
+
         {isLoading ? (
           <section className="state-panel">
             <h3>Daten werden geladen</h3>
@@ -1080,6 +1292,9 @@ export default function App() {
                     setSelectedMachineId(machine.id);
                     setActiveDetailSection("overview");
                     setHistoryWindow("5");
+                    setMachineDraft(machine);
+                    setEditingMachineId(machine.id);
+                    setMachineSubmitError("");
                   }}
                 />
               ))}
