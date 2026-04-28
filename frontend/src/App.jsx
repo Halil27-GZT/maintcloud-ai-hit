@@ -68,6 +68,107 @@ function formatNumber(value, unit = "") {
   return `${value}${unit}`;
 }
 
+function getStatusSummary(status) {
+  const tone = getStatusTone(status);
+
+  if (tone === "critical") {
+    return {
+      title: "Kritischer Zustand",
+      message: "Die letzten Messwerte deuten auf akuten Handlungsbedarf hin.",
+    };
+  }
+
+  if (tone === "warning") {
+    return {
+      title: "Erhoehte Aufmerksamkeit",
+      message: "Die Maschine sollte zeitnah geprueft und enger beobachtet werden.",
+    };
+  }
+
+  if (tone === "ok") {
+    return {
+      title: "Stabiler Betrieb",
+      message: "Die aktuellen Sensordaten zeigen keinen unmittelbaren Wartungsbedarf.",
+    };
+  }
+
+  return {
+    title: "Noch keine Bewertung",
+    message: "Es liegen noch nicht genug Sensordaten fuer eine belastbare Aussage vor.",
+  };
+}
+
+function createTrendPath(points, width, height, accessor) {
+  if (points.length === 0) {
+    return "";
+  }
+
+  const values = points.map(accessor);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+
+  return points
+    .map((point, index) => {
+      const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
+      const y = height - ((accessor(point) - min) / range) * height;
+      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ");
+}
+
+function TrendChart({ title, points, accessor, unit, stroke }) {
+  const width = 260;
+  const height = 84;
+  const values = points.map(accessor);
+  const latestValue = values.at(-1);
+  const previousValue = values.length > 1 ? values.at(-2) : undefined;
+  const delta =
+    latestValue !== undefined && previousValue !== undefined
+      ? Math.round((latestValue - previousValue) * 100) / 100
+      : null;
+  const path = createTrendPath(points, width, height, accessor);
+
+  return (
+    <article className="trend-card">
+      <div className="trend-card__header">
+        <div>
+          <p className="machine-card__label">{title}</p>
+          <strong>{formatNumber(latestValue, unit)}</strong>
+        </div>
+        <span
+          className={`trend-card__delta${
+            delta === null ? "" : delta > 0 ? " trend-card__delta--up" : delta < 0 ? " trend-card__delta--down" : ""
+          }`}
+        >
+          {delta === null ? "kein Verlauf" : `${delta > 0 ? "+" : ""}${delta}${unit}`}
+        </span>
+      </div>
+      {points.length > 1 ? (
+        <svg
+          className="trend-card__chart"
+          viewBox={`0 0 ${width} ${height}`}
+          role="img"
+          aria-label={`${title} Verlauf`}
+        >
+          <path className="trend-card__grid" d={`M 0 ${height} L ${width} ${height}`} />
+          <path
+            className="trend-card__line"
+            d={path}
+            fill="none"
+            stroke={stroke}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : (
+        <div className="trend-card__empty">Mehr Messpunkte noetig</div>
+      )}
+    </article>
+  );
+}
+
 function StatusBadge({ status }) {
   const tone = getStatusTone(status);
 
@@ -148,17 +249,20 @@ function MachineDetailPanel({
   const sortedHistory = [...sensorHistory].sort(
     (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime(),
   );
+  const trendHistory = [...sortedHistory].slice(0, 6).reverse();
   const latestHistoryEntry = sortedHistory[0] ?? latestSensorEntry;
   const latestMaintenance = maintenanceRecords[0];
+  const statusSummary = getStatusSummary(latestHistoryEntry?.status);
+  const detailTone = getStatusTone(latestHistoryEntry?.status);
 
   return (
-    <aside className="detail-panel">
+    <aside className={`detail-panel detail-panel--${detailTone}`}>
       <div className="detail-panel__header">
         <div>
           <p className="section-label">Maschinenansicht</p>
           <h3>{machine.name}</h3>
           <p className="detail-panel__subline">
-            {machine.id} · {machine.type}
+            {machine.id} - {machine.type}
           </p>
         </div>
         <StatusBadge status={latestHistoryEntry?.status} />
@@ -212,6 +316,10 @@ function MachineDetailPanel({
               />
             </dl>
             <div className="detail-callout">
+              <p className="machine-card__label">{statusSummary.title}</p>
+              <p>{statusSummary.message}</p>
+            </div>
+            <div className="detail-callout">
               <p className="machine-card__label">Empfehlung</p>
               <p>
                 {latestHistoryEntry?.recommendation ??
@@ -225,6 +333,31 @@ function MachineDetailPanel({
               <h4>Sensordatenverlauf</h4>
               <p>Die zuletzt erfassten Messpunkte fuer diese Maschine.</p>
             </div>
+            {trendHistory.length ? (
+              <div className="trend-grid">
+                <TrendChart
+                  title="Temperatur"
+                  points={trendHistory}
+                  accessor={(entry) => entry.temperature}
+                  unit=" deg C"
+                  stroke="#f97316"
+                />
+                <TrendChart
+                  title="Vibration"
+                  points={trendHistory}
+                  accessor={(entry) => entry.vibration}
+                  unit=" mm/s"
+                  stroke="#38bdf8"
+                />
+                <TrendChart
+                  title="Risk Score"
+                  points={trendHistory}
+                  accessor={(entry) => entry.risk_score}
+                  unit=""
+                  stroke="#facc15"
+                />
+              </div>
+            ) : null}
             {sortedHistory.length ? (
               <div className="detail-list">
                 {sortedHistory.slice(0, 5).map((entry) => (
@@ -234,7 +367,7 @@ function MachineDetailPanel({
                       <StatusBadge status={entry.status} />
                     </div>
                     <p>
-                      {entry.temperature} °C · {entry.vibration} mm/s · {entry.runtime_hours} h
+                      {entry.temperature} deg C - {entry.vibration} mm/s - {entry.runtime_hours} h
                     </p>
                     <p className="detail-list__muted">{entry.message}</p>
                   </article>
