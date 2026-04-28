@@ -9,6 +9,12 @@ import {
   getSensorData,
 } from "./api";
 
+const HISTORY_WINDOW_OPTIONS = [
+  { id: "3", label: "3 Werte", limit: 3 },
+  { id: "5", label: "5 Werte", limit: 5 },
+  { id: "all", label: "Alle", limit: null },
+];
+
 function mapLatestSensorData(items) {
   const latestByMachine = new Map();
 
@@ -145,6 +151,31 @@ function getRecommendedActions(status) {
   ];
 }
 
+function getHistoryWindowLabel(windowId) {
+  const option = HISTORY_WINDOW_OPTIONS.find((item) => item.id === windowId);
+  return option?.label ?? "Alle";
+}
+
+function getHistoryWindowItems(items, windowId) {
+  const option = HISTORY_WINDOW_OPTIONS.find((item) => item.id === windowId);
+
+  if (!option || option.limit === null) {
+    return items;
+  }
+
+  return items.slice(0, option.limit);
+}
+
+function isMaintenanceNearEntry(entryTimestamp, maintenanceRecords) {
+  const entryTime = new Date(entryTimestamp).getTime();
+
+  return maintenanceRecords.some((record) => {
+    const maintenanceTime = new Date(record.performed_at).getTime();
+    const diffHours = Math.abs(entryTime - maintenanceTime) / (1000 * 60 * 60);
+    return diffHours <= 24;
+  });
+}
+
 function createTrendPath(points, width, height, accessor) {
   if (points.length === 0) {
     return "";
@@ -221,6 +252,25 @@ function TrendChart({ title, points, accessor, unit, stroke }) {
         <div className="trend-card__empty">Mehr Messpunkte noetig</div>
       )}
     </article>
+  );
+}
+
+function HistoryWindowSelector({ value, onChange }) {
+  return (
+    <div className="history-window-selector" role="tablist" aria-label="Verlaufsfenster">
+      {HISTORY_WINDOW_OPTIONS.map((option) => (
+        <button
+          key={option.id}
+          className={`history-window-selector__button${
+            value === option.id ? " history-window-selector__button--active" : ""
+          }`}
+          type="button"
+          onClick={() => onChange(option.id)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -303,11 +353,14 @@ function MachineDetailPanel({
   activeSection,
   onSectionSelect,
   onRefresh,
+  historyWindow,
+  onHistoryWindowChange,
 }) {
   const sortedHistory = [...sensorHistory].sort(
     (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime(),
   );
-  const trendHistory = [...sortedHistory].slice(0, 6).reverse();
+  const visibleHistory = getHistoryWindowItems(sortedHistory, historyWindow);
+  const trendHistory = [...visibleHistory].reverse();
   const latestHistoryEntry = sortedHistory[0] ?? latestSensorEntry;
   const latestMaintenance = maintenanceRecords[0];
   const statusSummary = getStatusSummary(latestHistoryEntry?.status);
@@ -423,8 +476,15 @@ function MachineDetailPanel({
             className={`detail-section${activeSection === "history" ? " detail-section--active" : ""}`}
           >
             <div className="detail-section__heading">
-              <h4>Sensordatenverlauf</h4>
-              <p>Die zuletzt erfassten Messpunkte fuer diese Maschine.</p>
+              <div>
+                <h4>Sensordatenverlauf</h4>
+                <p>
+                  Die zuletzt erfassten Messpunkte fuer diese Maschine. Aktives Fenster:
+                  {" "}
+                  {getHistoryWindowLabel(historyWindow)}.
+                </p>
+              </div>
+              <HistoryWindowSelector value={historyWindow} onChange={onHistoryWindowChange} />
             </div>
             {trendHistory.length ? (
               <div className="trend-grid">
@@ -451,13 +511,25 @@ function MachineDetailPanel({
                 />
               </div>
             ) : null}
-            {sortedHistory.length ? (
+            {visibleHistory.length ? (
               <div className="detail-list">
-                {sortedHistory.slice(0, 5).map((entry) => (
+                {visibleHistory.map((entry) => (
                   <article className="detail-list__item" key={entry.timestamp}>
                     <div className="detail-list__row">
-                      <strong>{formatDate(entry.timestamp)}</strong>
-                      <StatusBadge status={entry.status} />
+                      <div>
+                        <strong>{formatDate(entry.timestamp)}</strong>
+                        <p className="detail-list__muted">
+                          Risk Score {entry.risk_score} - Status {entry.status}
+                        </p>
+                      </div>
+                      <div className="detail-list__tags">
+                        {isMaintenanceNearEntry(entry.timestamp, maintenanceRecords) ? (
+                          <span className="detail-chip detail-chip--maintenance">
+                            Wartung nah am Messpunkt
+                          </span>
+                        ) : null}
+                        <StatusBadge status={entry.status} />
+                      </div>
                     </div>
                     <p>
                       {entry.temperature} deg C - {entry.vibration} mm/s - {entry.runtime_hours} h
@@ -529,6 +601,7 @@ export default function App() {
   const [detailError, setDetailError] = useState("");
   const [detailRequestKey, setDetailRequestKey] = useState(0);
   const [activeDetailSection, setActiveDetailSection] = useState("overview");
+  const [historyWindow, setHistoryWindow] = useState("5");
 
   useEffect(() => {
     let active = true;
@@ -705,6 +778,7 @@ export default function App() {
                   onSelect={() => {
                     setSelectedMachineId(machine.id);
                     setActiveDetailSection("overview");
+                    setHistoryWindow("5");
                   }}
                 />
               ))}
@@ -721,6 +795,8 @@ export default function App() {
                 activeSection={activeDetailSection}
                 onSectionSelect={setActiveDetailSection}
                 onRefresh={() => setDetailRequestKey((value) => value + 1)}
+                historyWindow={historyWindow}
+                onHistoryWindowChange={setHistoryWindow}
               />
             ) : null}
           </section>
