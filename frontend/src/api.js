@@ -1,20 +1,81 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim() || "/api";
 
-async function request(path, options) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers ?? {}),
-    },
-    ...options,
-  });
+function normalizeApiBaseUrl(value) {
+  if (!value) {
+    return "/api";
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value.replace(/\/+$/, "");
+  }
+
+  const normalizedPath = value.startsWith("/") ? value : `/${value}`;
+  return normalizedPath.replace(/\/+$/, "");
+}
+
+function buildApiUrl(path) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
+
+async function parseError(response) {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    try {
+      const payload = await response.json();
+      if (typeof payload?.detail === "string" && payload.detail) {
+        return payload.detail;
+      }
+      if (typeof payload?.message === "string" && payload.message) {
+        return payload.message;
+      }
+    } catch {
+      return "";
+    }
+  }
+
+  try {
+    const text = await response.text();
+    return text.trim();
+  } catch {
+    return "";
+  }
+}
+
+async function request(path, options = {}) {
+  const { headers, ...requestOptions } = options;
+
+  let response;
+  try {
+    response = await fetch(buildApiUrl(path), {
+      headers: {
+        "Content-Type": "application/json",
+        ...(headers ?? {}),
+      },
+      ...requestOptions,
+    });
+  } catch {
+    throw new Error(
+      `API unter ${API_BASE_URL} ist nicht erreichbar. Pruefe die API-URL und ob Backend bzw. Proxy laufen.`,
+    );
+  }
 
   if (!response.ok) {
-    throw new Error(`API request failed with status ${response.status}`);
+    const errorMessage = await parseError(response);
+    throw new Error(
+      errorMessage || `API request to ${buildApiUrl(path)} failed with status ${response.status}`,
+    );
+  }
+
+  if (response.status === 204) {
+    return null;
   }
 
   return response.json();
 }
+
+const API_BASE_URL = normalizeApiBaseUrl(RAW_API_BASE_URL);
 
 export async function getMachines() {
   return request("/machines");
@@ -39,13 +100,9 @@ export async function updateMachine(machineId, payload) {
 }
 
 export async function deleteMachine(machineId) {
-  const response = await fetch(`${API_BASE_URL}/machines/${machineId}`, {
+  await request(`/machines/${machineId}`, {
     method: "DELETE",
   });
-
-  if (!response.ok) {
-    throw new Error(`API request failed with status ${response.status}`);
-  }
 }
 
 export async function getSensorData() {
@@ -86,13 +143,9 @@ export async function updateMaintenanceRecord(recordId, payload) {
 }
 
 export async function deleteMaintenanceRecord(recordId) {
-  const response = await fetch(`${API_BASE_URL}/maintenance-records/${recordId}`, {
+  await request(`/maintenance-records/${recordId}`, {
     method: "DELETE",
   });
-
-  if (!response.ok) {
-    throw new Error(`API request failed with status ${response.status}`);
-  }
 }
 
 export { API_BASE_URL };

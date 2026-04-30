@@ -209,6 +209,7 @@ Hinweise:
 
 - Fuer lokale Tests verwendet das Projekt weiterhin SQLite.
 - Fuer den eigentlichen App-Betrieb ist jetzt PostgreSQL das bevorzugte Ziel.
+- Fuer den direkten Vite-Start kann optional `frontend/.env` aus `frontend/.env.example` erstellt werden.
 
 ## Datenbankmigrationen
 
@@ -223,13 +224,22 @@ python -m alembic current
 
 Wenn du lokal ohne Docker arbeitest, muessen die Python-Abhaengigkeiten aus `requirements.txt` installiert sein.
 
-Standardmaessig erwartet das Frontend das Backend unter `http://localhost:8000`.
+Standardmaessig verwendet das Frontend je nach Betriebsweg unterschiedliche API-Basen:
+
+- Direkter lokaler Vite-Start: `http://localhost:8000`
+- Gebautes Frontend hinter dem Proxy: `/api`
 
 Falls noetig, kann die API-URL ueber `frontend/.env` angepasst werden:
 
 ```bash
 VITE_API_BASE_URL=http://localhost:8000
 ```
+
+Wichtig:
+
+- Absolute API-URLs wie `http://localhost:8000` sind fuer den lokalen Dev-Modus gedacht.
+- Relative API-URLs wie `/api` sind fuer Proxy- oder Deployment-Szenarien gedacht.
+- Der Docker-Produktionsbuild faellt standardmaessig auf `/api` zurueck, damit Frontend und Backend sauber ueber den Reverse Proxy gekoppelt bleiben.
 
 Damit bleiben beide Betriebswege erhalten:
 

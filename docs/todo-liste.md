@@ -36,10 +36,10 @@ Diese ToDo-Liste bildet den aktuellen technischen Stand des Projekts ab und prio
 
 ### Phase 6 - Produktnaechste Erweiterungen
 
-- [ ] Maschinen-Detailansicht im Frontend ergaenzen
-- [ ] Verlaufsdaten fuer Sensordaten im Frontend anzeigen
-- [ ] Fehlerzustaende im Frontend besser darstellen
-- [ ] Konfigurierbare API-Umgebungen fuer Dev und spaeteres Deployment absichern
+- [x] Maschinen-Detailansicht im Frontend ergaenzen
+- [x] Verlaufsdaten fuer Sensordaten im Frontend anzeigen
+- [x] Fehlerzustaende im Frontend besser darstellen
+- [x] Konfigurierbare API-Umgebungen fuer Dev und spaeteres Deployment absichern
 
 ### Qualitaet und Betrieb
 

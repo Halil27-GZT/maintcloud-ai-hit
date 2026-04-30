@@ -1513,7 +1513,7 @@ export default function App() {
           <p className="hero__panel-label">Backend API</p>
           <code>{API_BASE_URL}</code>
           <p className="hero__panel-meta">
-            Datenquelle: FastAPI, SQLite, regelbasierte Risikoanalyse
+            Datenquelle: FastAPI API, konfigurierbare API-Umgebung, regelbasierte Risikoanalyse
           </p>
         </div>
       </header>
@@ -1561,8 +1561,8 @@ export default function App() {
             <h3>API-Verbindung fehlgeschlagen</h3>
             <p>{error}</p>
             <p>
-              Prüfe, ob das Backend unter <code>{API_BASE_URL}</code> läuft und
-              CORS freigegeben ist.
+              Prüfe, ob Backend oder Proxy unter <code>{API_BASE_URL}</code> erreichbar
+              sind und die API-Konfiguration zur aktuellen Umgebung passt.
             </p>
             <button
               className="detail-utility-button"
