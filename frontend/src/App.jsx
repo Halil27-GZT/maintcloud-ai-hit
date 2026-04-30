@@ -347,6 +347,7 @@ function MachineComposer({
   onChange,
   onSubmit,
   onCancelEdit,
+  onStartCreate,
   editingMachineId,
   isSubmitting,
   error,
@@ -363,6 +364,14 @@ function MachineComposer({
               : "Neue Maschine direkt in der Uebersicht erfassen."}
           </p>
         </div>
+        <button
+          className="detail-utility-button"
+          type="button"
+          onClick={onStartCreate}
+          disabled={isSubmitting}
+        >
+          Neues Formular
+        </button>
       </div>
 
       <div className="machine-composer__grid">
@@ -437,7 +446,9 @@ function MachineAdminCard({
   onChange,
   onSubmit,
   onCancelEdit,
+  onStartCreate,
   editingMachineId,
+  editingMachineName,
   onDelete,
   isSubmitting,
   error,
@@ -450,11 +461,22 @@ function MachineAdminCard({
         onChange={onChange}
         onSubmit={onSubmit}
         onCancelEdit={onCancelEdit}
+        onStartCreate={onStartCreate}
         editingMachineId={editingMachineId}
         isSubmitting={isSubmitting}
         error={error}
         successMessage={successMessage}
       />
+      {editingMachineId ? (
+        <p className="machine-admin-card__context">
+          Bearbeitest aktuell <strong>{editingMachineId}</strong>
+          {editingMachineName ? ` - ${editingMachineName}` : ""}.
+        </p>
+      ) : (
+        <p className="machine-admin-card__context">
+          Der Admin-Bereich ist aktuell im Anlegen-Modus.
+        </p>
+      )}
       {editingMachineId ? (
         <div className="machine-admin-card__footer">
           <button
@@ -672,7 +694,7 @@ function StatusBadge({ status }) {
   );
 }
 
-function MachineCard({ machine, sensorEntry, isSelected, onSelect }) {
+function MachineCard({ machine, sensorEntry, isSelected, onSelect, onEdit }) {
   return (
     <article className={`machine-card${isSelected ? " machine-card--selected" : ""}`}>
       <div className="machine-card__header">
@@ -715,9 +737,14 @@ function MachineCard({ machine, sensorEntry, isSelected, onSelect }) {
         </div>
       </div>
 
-      <button className="machine-card__action" type="button" onClick={onSelect}>
-        {isSelected ? "Details aktualisieren" : "Details ansehen"}
-      </button>
+      <div className="machine-card__actions">
+        <button className="machine-card__action" type="button" onClick={onSelect}>
+          {isSelected ? "Details aktualisieren" : "Details ansehen"}
+        </button>
+        <button className="detail-utility-button" type="button" onClick={onEdit}>
+          Bearbeiten
+        </button>
+      </div>
     </article>
   );
 }
@@ -1087,6 +1114,37 @@ export default function App() {
   const [activeDetailSection, setActiveDetailSection] = useState("overview");
   const [historyWindow, setHistoryWindow] = useState("5");
 
+  function resetMachineAdminForm() {
+    setMachineDraft(createMachineDraft());
+    setEditingMachineId(null);
+    setMachineSubmitError("");
+    setMachineSuccessMessage("");
+  }
+
+  function startMachineEdit(machine) {
+    setMachineDraft({
+      id: machine.id,
+      name: machine.name,
+      type: machine.type,
+    });
+    setEditingMachineId(machine.id);
+    setMachineSubmitError("");
+    setMachineSuccessMessage("");
+  }
+
+  function selectMachine(machineId) {
+    setSelectedMachineId(machineId);
+    setActiveDetailSection("overview");
+    setHistoryWindow("5");
+    setSensorDraft(createSensorDraft(machineId));
+    setMaintenanceDraft(createMaintenanceDraft(machineId));
+    setEditingMaintenanceRecordId(null);
+    setMaintenanceSubmitError("");
+    setMaintenanceSuccessMessage("");
+    setSensorSubmitError("");
+    setSensorSuccessMessage("");
+  }
+
   useEffect(() => {
     if (!machineSuccessMessage && !sensorSuccessMessage && !maintenanceSuccessMessage) {
       return undefined;
@@ -1344,8 +1402,7 @@ export default function App() {
     try {
       const deletedMachineId = editingMachineId;
       await deleteMachine(editingMachineId);
-      setMachineDraft(createMachineDraft());
-      setEditingMachineId(null);
+      resetMachineAdminForm();
       setSelectedMachineId("");
       setMachineSuccessMessage(`Maschine ${deletedMachineId} wurde geloescht.`);
       setDashboardRequestKey((value) => value + 1);
@@ -1482,12 +1539,10 @@ export default function App() {
             }))
           }
           onSubmit={handleMachineSubmit}
-          onCancelEdit={() => {
-            setMachineDraft(createMachineDraft());
-            setEditingMachineId(null);
-            setMachineSubmitError("");
-          }}
+          onCancelEdit={resetMachineAdminForm}
+          onStartCreate={resetMachineAdminForm}
           editingMachineId={editingMachineId}
+          editingMachineName={machineDraft.name}
           onDelete={handleMachineDelete}
           isSubmitting={isMachineSubmitting}
           error={machineSubmitError}
@@ -1528,14 +1583,8 @@ export default function App() {
                   machine={machine}
                   sensorEntry={sensorEntry}
                   isSelected={machine.id === selectedMachineId}
-                  onSelect={() => {
-                    setSelectedMachineId(machine.id);
-                    setActiveDetailSection("overview");
-                    setHistoryWindow("5");
-                    setMachineDraft(machine);
-                    setEditingMachineId(machine.id);
-                    setMachineSubmitError("");
-                  }}
+                  onSelect={() => selectMachine(machine.id)}
+                  onEdit={() => startMachineEdit(machine)}
                 />
               ))}
             </div>

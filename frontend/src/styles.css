@@ -238,6 +238,12 @@ code {
   gap: 16px;
 }
 
+.machine-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .machine-card__footer p {
   margin: 0;
 }
@@ -618,6 +624,11 @@ code {
   display: flex;
   justify-content: flex-start;
   margin-top: 14px;
+}
+
+.machine-admin-card__context {
+  margin: 14px 0 0;
+  color: var(--text-muted);
 }
 
 .machine-composer,
