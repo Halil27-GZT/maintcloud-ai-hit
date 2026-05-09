@@ -1,4 +1,5 @@
 const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim() || "/api";
+const ACCESS_TOKEN_STORAGE_KEY = "maintcloud.access_token";
 
 function normalizeApiBaseUrl(value) {
   if (!value) {
@@ -45,12 +46,17 @@ async function parseError(response) {
 
 async function request(path, options = {}) {
   const { headers, ...requestOptions } = options;
+  const token =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)
+      : null;
 
   let response;
   try {
     response = await fetch(buildApiUrl(path), {
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(headers ?? {}),
       },
       ...requestOptions,
@@ -63,9 +69,11 @@ async function request(path, options = {}) {
 
   if (!response.ok) {
     const errorMessage = await parseError(response);
-    throw new Error(
+    const error = new Error(
       errorMessage || `API request to ${buildApiUrl(path)} failed with status ${response.status}`,
     );
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204) {
@@ -79,6 +87,22 @@ const API_BASE_URL = normalizeApiBaseUrl(RAW_API_BASE_URL);
 
 export async function getMachines() {
   return request("/machines");
+}
+
+export async function login(payload) {
+  return request("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getCurrentUser() {
+  return request("/auth/me");
+}
+
+export async function getUsers() {
+  const data = await request("/users");
+  return data.items;
 }
 
 export async function getMachine(machineId) {
@@ -148,4 +172,12 @@ export async function deleteMaintenanceRecord(recordId) {
   });
 }
 
-export { API_BASE_URL };
+export async function getHealthStatus() {
+  return request("/health");
+}
+
+export async function getReadinessStatus() {
+  return request("/health/ready");
+}
+
+export { ACCESS_TOKEN_STORAGE_KEY, API_BASE_URL };

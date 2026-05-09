@@ -1,4 +1,12 @@
 import { useEffect, useState } from "react";
+import {
+  NavLink,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 
 import {
   API_BASE_URL,
@@ -11,10 +19,15 @@ import {
   getMachineMaintenanceRecords,
   getMachineSensorData,
   getMachines,
+  getHealthStatus,
+  getReadinessStatus,
   getSensorData,
+  getUsers,
   updateMachine,
   updateMaintenanceRecord,
 } from "./api";
+import { useAuth } from "./auth";
+import LoginPage from "./LoginPage";
 
 const HISTORY_WINDOW_OPTIONS = [
   { id: "3", label: "3 Werte", limit: 3 },
@@ -694,7 +707,7 @@ function StatusBadge({ status }) {
   );
 }
 
-function MachineCard({ machine, sensorEntry, isSelected, onSelect, onEdit }) {
+function MachineCard({ machine, sensorEntry, isSelected, onSelect, onEdit, canEdit }) {
   return (
     <article className={`machine-card${isSelected ? " machine-card--selected" : ""}`}>
       <div className="machine-card__header">
@@ -741,9 +754,11 @@ function MachineCard({ machine, sensorEntry, isSelected, onSelect, onEdit }) {
         <button className="machine-card__action" type="button" onClick={onSelect}>
           {isSelected ? "Details aktualisieren" : "Details ansehen"}
         </button>
-        <button className="detail-utility-button" type="button" onClick={onEdit}>
-          Bearbeiten
-        </button>
+        {canEdit ? (
+          <button className="detail-utility-button" type="button" onClick={onEdit}>
+            Bearbeiten
+          </button>
+        ) : null}
       </div>
     </article>
   );
@@ -788,6 +803,9 @@ function MachineDetailPanel({
   isSensorSubmitting,
   sensorSubmitError,
   sensorSuccessMessage,
+  mode,
+  canManageMaintenance,
+  canManageSensorData,
 }) {
   const sortedHistory = [...sensorHistory].sort(
     (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime(),
@@ -799,6 +817,14 @@ function MachineDetailPanel({
   const statusSummary = getStatusSummary(latestHistoryEntry?.status);
   const detailTone = getStatusTone(latestHistoryEntry?.status);
   const recommendedActions = getRecommendedActions(latestHistoryEntry?.status);
+  const showHistorySection =
+    mode === "machines" || mode === "sensor-data" || mode === "analysis";
+  const showMaintenanceSection = mode === "machines" || mode === "maintenance";
+  const showActionSection = mode === "machines" || mode === "analysis";
+  const showSensorComposer =
+    canManageSensorData && (mode === "machines" || mode === "sensor-data");
+  const showMaintenanceComposer =
+    canManageMaintenance && (mode === "machines" || mode === "maintenance");
 
   return (
     <aside className={`detail-panel detail-panel--${detailTone}`}>
@@ -883,31 +909,34 @@ function MachineDetailPanel({
             </div>
           </section>
 
-          <section className="detail-section">
-            <div className="detail-section__heading">
-              <h4>Empfohlene Aktionen</h4>
-              <p>Naechste sinnvolle Schritte basierend auf dem aktuellen Zustand.</p>
-            </div>
-            <div className="action-grid">
-              {recommendedActions.map((action) => (
-                <button
-                  key={action.id}
-                  className={`action-card${
-                    activeSection === action.id ? " action-card--active" : ""
-                  }`}
-                  type="button"
-                  onClick={() => onSectionSelect(action.id)}
-                >
-                  <strong>{action.label}</strong>
-                  <span>{action.description}</span>
-                </button>
-              ))}
-            </div>
-          </section>
+          {showActionSection ? (
+            <section className="detail-section">
+              <div className="detail-section__heading">
+                <h4>Empfohlene Aktionen</h4>
+                <p>Naechste sinnvolle Schritte basierend auf dem aktuellen Zustand.</p>
+              </div>
+              <div className="action-grid">
+                {recommendedActions.map((action) => (
+                  <button
+                    key={action.id}
+                    className={`action-card${
+                      activeSection === action.id ? " action-card--active" : ""
+                    }`}
+                    type="button"
+                    onClick={() => onSectionSelect(action.id)}
+                  >
+                    <strong>{action.label}</strong>
+                    <span>{action.description}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
-          <section
-            className={`detail-section${activeSection === "history" ? " detail-section--active" : ""}`}
-          >
+          {showHistorySection ? (
+            <section
+              className={`detail-section${activeSection === "history" ? " detail-section--active" : ""}`}
+            >
             <div className="detail-section__heading">
               <div>
                 <h4>Sensordatenverlauf</h4>
@@ -986,11 +1015,13 @@ function MachineDetailPanel({
                 <p>Fuer diese Maschine sind noch keine Sensordaten vorhanden.</p>
               </div>
             ) : null}
-          </section>
+            </section>
+          ) : null}
 
-          <section
-            className={`detail-section${activeSection === "maintenance" ? " detail-section--active" : ""}`}
-          >
+          {showMaintenanceSection ? (
+            <section
+              className={`detail-section${activeSection === "maintenance" ? " detail-section--active" : ""}`}
+            >
             <div className="detail-section__heading">
               <h4>Wartungshistorie</h4>
               <p>Zuletzt dokumentierte Massnahmen und Service-Eintraege.</p>
@@ -1017,20 +1048,24 @@ function MachineDetailPanel({
                       </div>
                       <div className="detail-list__tags">
                         <span className="detail-chip">{record.technician}</span>
-                        <button
-                          className="maintenance-entry-action"
-                          type="button"
-                          onClick={() => onMaintenanceEdit(record)}
-                        >
-                          Bearbeiten
-                        </button>
-                        <button
-                          className="maintenance-entry-action maintenance-entry-action--danger"
-                          type="button"
-                          onClick={() => onMaintenanceDelete(record)}
-                        >
-                          Loeschen
-                        </button>
+                        {canManageMaintenance ? (
+                          <>
+                            <button
+                              className="maintenance-entry-action"
+                              type="button"
+                              onClick={() => onMaintenanceEdit(record)}
+                            >
+                              Bearbeiten
+                            </button>
+                            <button
+                              className="maintenance-entry-action maintenance-entry-action--danger"
+                              type="button"
+                              onClick={() => onMaintenanceDelete(record)}
+                            >
+                              Loeschen
+                            </button>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                     <p>{record.description}</p>
@@ -1051,38 +1086,44 @@ function MachineDetailPanel({
                 </p>
               </div>
             ) : null}
-          </section>
+            </section>
+          ) : null}
 
-          <section className="detail-section">
-            <SensorComposer
-              value={sensorDraft}
-              onChange={onSensorDraftChange}
-              onSubmit={onSensorSubmit}
-              isSubmitting={isSensorSubmitting}
-              error={sensorSubmitError}
-              successMessage={sensorSuccessMessage}
-            />
-          </section>
+          {showSensorComposer ? (
+            <section className="detail-section">
+              <SensorComposer
+                value={sensorDraft}
+                onChange={onSensorDraftChange}
+                onSubmit={onSensorSubmit}
+                isSubmitting={isSensorSubmitting}
+                error={sensorSubmitError}
+                successMessage={sensorSuccessMessage}
+              />
+            </section>
+          ) : null}
 
-          <section className="detail-section">
-            <MaintenanceComposer
-              value={maintenanceDraft}
-              onChange={onMaintenanceDraftChange}
-              onSubmit={onMaintenanceSubmit}
-              onCancelEdit={onMaintenanceCancelEdit}
-              editingRecordId={editingMaintenanceRecordId}
-              isSubmitting={isMaintenanceSubmitting}
-              error={maintenanceSubmitError}
-              successMessage={maintenanceSuccessMessage}
-            />
-          </section>
+          {showMaintenanceComposer ? (
+            <section className="detail-section">
+              <MaintenanceComposer
+                value={maintenanceDraft}
+                onChange={onMaintenanceDraftChange}
+                onSubmit={onMaintenanceSubmit}
+                onCancelEdit={onMaintenanceCancelEdit}
+                editingRecordId={editingMaintenanceRecordId}
+                isSubmitting={isMaintenanceSubmitting}
+                error={maintenanceSubmitError}
+                successMessage={maintenanceSuccessMessage}
+              />
+            </section>
+          ) : null}
         </>
       ) : null}
     </aside>
   );
 }
 
-export default function App() {
+function OperationsWorkspace({ mode = "machines" }) {
+  const { user } = useAuth();
   const [machines, setMachines] = useState([]);
   const [sensorData, setSensorData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1113,6 +1154,26 @@ export default function App() {
   const [detailRequestKey, setDetailRequestKey] = useState(0);
   const [activeDetailSection, setActiveDetailSection] = useState("overview");
   const [historyWindow, setHistoryWindow] = useState("5");
+  const isAdmin = user?.role === "admin";
+  const canManageSensorData = user?.role === "admin" || user?.role === "technician";
+  const canManageMaintenance = canManageSensorData;
+  const showHero = mode === "dashboard";
+  const showAdminCard = mode === "machines" && isAdmin;
+  const showDetailPanel = true;
+
+  useEffect(() => {
+    if (mode === "sensor-data") {
+      setActiveDetailSection("history");
+      return;
+    }
+
+    if (mode === "maintenance") {
+      setActiveDetailSection("maintenance");
+      return;
+    }
+
+    setActiveDetailSection("overview");
+  }, [mode, selectedMachineId]);
 
   function resetMachineAdminForm() {
     setMachineDraft(createMachineDraft());
@@ -1497,57 +1558,116 @@ export default function App() {
   const selectedMachineSensorEntry = selectedMachine
     ? latestByMachine.get(selectedMachine.id)
     : null;
+  const criticalMachines = machinesWithSensorState.filter(
+    ({ sensorEntry }) => getStatusTone(sensorEntry?.status) === "critical",
+  ).length;
+  const warningMachines = machinesWithSensorState.filter(
+    ({ sensorEntry }) => getStatusTone(sensorEntry?.status) === "warning",
+  ).length;
+  const healthyMachines = machinesWithSensorState.filter(
+    ({ sensorEntry }) => getStatusTone(sensorEntry?.status) === "ok",
+  ).length;
+  const pageConfig = {
+    dashboard: {
+      eyebrow: "Startseite",
+      title: "Dashboard",
+      summary: "Gesamtstatus, kritische Maschinen und operative Einstiegspunkte.",
+    },
+    machines: {
+      eyebrow: "Fachbereich",
+      title: "Maschinen",
+      summary: "Stammdaten, Auswahl und Detailansicht der Maschinen.",
+    },
+    "sensor-data": {
+      eyebrow: "Fachbereich",
+      title: "Sensordaten",
+      summary: "Messwerte erfassen, Verlauf pruefen und Trends kontrollieren.",
+    },
+    maintenance: {
+      eyebrow: "Fachbereich",
+      title: "Wartung",
+      summary: "Servicehistorie pflegen und Wartungseintraege verwalten.",
+    },
+    analysis: {
+      eyebrow: "Fachbereich",
+      title: "Analyse und Trends",
+      summary: "Zustandsbewertung und Trendentwicklung fokussiert betrachten.",
+    },
+  }[mode];
 
   return (
-    <div className="app-shell">
-      <header className="hero">
-        <div className="hero__copy">
-          <p className="hero__kicker">A Solution by H.I.T.</p>
-          <h1>MaintCloud AI</h1>
-          <p className="hero__lead">
-            Maschinenuebersicht fuer Zustandsbewertung, Wartungsplanung und den
-            Einstieg in Predictive Maintenance.
-          </p>
-        </div>
-        <div className="hero__panel">
-          <p className="hero__panel-label">Backend API</p>
-          <code>{API_BASE_URL}</code>
-          <p className="hero__panel-meta">
-            Datenquelle: FastAPI API, konfigurierbare API-Umgebung, regelbasierte Risikoanalyse
-          </p>
-        </div>
-      </header>
-
+    <div className="operations-workspace">
+      {showHero ? (
+        <header className="hero">
+          <div className="hero__copy">
+            <p className="hero__kicker">A Solution by H.I.T.</p>
+            <h1>MaintCloud AI</h1>
+            <p className="hero__lead">
+              Maschinenuebersicht fuer Zustandsbewertung, Wartungsplanung und den
+              Einstieg in Predictive Maintenance.
+            </p>
+          </div>
+          <div className="hero__panel">
+            <p className="hero__panel-label">Backend API</p>
+            <code>{API_BASE_URL}</code>
+            <p className="hero__panel-meta">
+              Datenquelle: FastAPI API, konfigurierbare API-Umgebung, regelbasierte
+              Risikoanalyse
+            </p>
+          </div>
+        </header>
+      ) : null}
       <main className="dashboard">
         <section className="dashboard__toolbar">
           <div>
-            <p className="section-label">Startseite</p>
-            <h2>Maschinenuebersicht</h2>
+            <p className="section-label">{pageConfig.eyebrow}</p>
+            <h2>{pageConfig.title}</h2>
+            <p className="dashboard__toolbar-copy">{pageConfig.summary}</p>
           </div>
           <div className="dashboard__summary">
             <span>{machines.length} Maschinen</span>
             <span>{sensorData.length} Sensordatensaetze</span>
+            <span>{criticalMachines} kritisch</span>
           </div>
         </section>
 
-        <MachineAdminCard
-          value={machineDraft}
-          onChange={(event) =>
-            setMachineDraft((current) => ({
-              ...current,
-              [event.target.name]: event.target.value,
-            }))
-          }
-          onSubmit={handleMachineSubmit}
-          onCancelEdit={resetMachineAdminForm}
-          onStartCreate={resetMachineAdminForm}
-          editingMachineId={editingMachineId}
-          editingMachineName={machineDraft.name}
-          onDelete={handleMachineDelete}
-          isSubmitting={isMachineSubmitting}
-          error={machineSubmitError}
-          successMessage={machineSuccessMessage}
-        />
+        {showHero ? (
+          <section className="dashboard-kpi-grid">
+            <article className="dashboard-kpi-card">
+              <p className="machine-card__label">Gesunde Maschinen</p>
+              <strong>{healthyMachines}</strong>
+            </article>
+            <article className="dashboard-kpi-card">
+              <p className="machine-card__label">Warnungen</p>
+              <strong>{warningMachines}</strong>
+            </article>
+            <article className="dashboard-kpi-card dashboard-kpi-card--critical">
+              <p className="machine-card__label">Kritische Maschinen</p>
+              <strong>{criticalMachines}</strong>
+            </article>
+          </section>
+        ) : null}
+
+        {showAdminCard ? (
+          <MachineAdminCard
+            value={machineDraft}
+            onChange={(event) =>
+              setMachineDraft((current) => ({
+                ...current,
+                [event.target.name]: event.target.value,
+              }))
+            }
+            onSubmit={handleMachineSubmit}
+            onCancelEdit={resetMachineAdminForm}
+            onStartCreate={resetMachineAdminForm}
+            editingMachineId={editingMachineId}
+            editingMachineName={machineDraft.name}
+            onDelete={handleMachineDelete}
+            isSubmitting={isMachineSubmitting}
+            error={machineSubmitError}
+            successMessage={machineSuccessMessage}
+          />
+        ) : null}
 
         {isLoading ? (
           <section className="state-panel">
@@ -1585,11 +1705,12 @@ export default function App() {
                   isSelected={machine.id === selectedMachineId}
                   onSelect={() => selectMachine(machine.id)}
                   onEdit={() => startMachineEdit(machine)}
+                  canEdit={isAdmin}
                 />
               ))}
             </div>
 
-            {selectedMachine ? (
+            {showDetailPanel && selectedMachine ? (
               <MachineDetailPanel
                 machine={selectedMachine}
                 latestSensorEntry={selectedMachineSensorEntry}
@@ -1643,11 +1764,325 @@ export default function App() {
                 maintenanceSubmitError={maintenanceSubmitError}
                 maintenanceSuccessMessage={maintenanceSuccessMessage}
                 sensorSuccessMessage={sensorSuccessMessage}
+                mode={mode}
+                canManageMaintenance={canManageMaintenance}
+                canManageSensorData={canManageSensorData}
               />
             ) : null}
           </section>
         ) : null}
       </main>
     </div>
+  );
+}
+
+function RequireAuth() {
+  const { isAuthenticated, isReady } = useAuth();
+  const location = useLocation();
+
+  if (!isReady) {
+    return (
+      <section className="state-panel">
+        <h3>Authentifizierung wird vorbereitet</h3>
+        <p>Session und Rollen werden geprueft.</p>
+      </section>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return <Outlet />;
+}
+
+function RoleGate({ allowedRoles }) {
+  const { user } = useAuth();
+
+  if (!allowedRoles.includes(user?.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Outlet />;
+}
+
+function AppFrame() {
+  const location = useLocation();
+  const { user, logout } = useAuth();
+
+  const navigationItems = [
+    { to: "/dashboard", label: "Dashboard" },
+    { to: "/machines", label: "Maschinen" },
+    { to: "/sensor-data", label: "Sensordaten" },
+    { to: "/maintenance", label: "Wartung" },
+    { to: "/analysis", label: "Analyse / Trends" },
+    { to: "/system-status", label: "Systemstatus" },
+    ...(user?.role === "admin" ? [{ to: "/users", label: "Benutzer / Rollen" }] : []),
+  ];
+
+  const pageTitle =
+    navigationItems.find((item) => location.pathname.startsWith(item.to))?.label ??
+    "MaintCloud AI";
+
+  return (
+    <div className="workspace-frame">
+      <aside className="workspace-sidebar">
+        <div className="workspace-sidebar__brand">
+          <p className="hero__kicker">MaintCloud AI</p>
+          <h1>Industrial Ops</h1>
+          <p className="hero__panel-meta">
+            Routing, Rollen und geschuetzte Fachbereiche fuer Predictive Maintenance.
+          </p>
+        </div>
+
+        <nav className="workspace-nav" aria-label="Hauptnavigation">
+          {navigationItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `workspace-nav__item${isActive ? " workspace-nav__item--active" : ""}`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+
+      <section className="workspace-main">
+        <header className="workspace-topbar">
+          <div>
+            <p className="section-label">Aktive Ansicht</p>
+            <h2>{pageTitle}</h2>
+          </div>
+          <div className="workspace-topbar__actions">
+            <div className="workspace-user-pill">
+              <strong>{user?.email}</strong>
+              <span>{user?.role}</span>
+            </div>
+            <button className="detail-utility-button" type="button" onClick={logout}>
+              Logout
+            </button>
+          </div>
+        </header>
+
+        <div className="app-shell">
+          <Outlet />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SystemStatusPage() {
+  const { user } = useAuth();
+  const [health, setHealth] = useState(null);
+  const [readiness, setReadiness] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadStatus() {
+      setError("");
+
+      try {
+        const [healthResult, readinessResult] = await Promise.all([
+          getHealthStatus(),
+          getReadinessStatus(),
+        ]);
+
+        if (!active) {
+          return;
+        }
+
+        setHealth(healthResult);
+        setReadiness(readinessResult);
+      } catch (statusError) {
+        if (!active) {
+          return;
+        }
+
+        setError(
+          statusError instanceof Error
+            ? statusError.message
+            : "Systemstatus konnte nicht geladen werden.",
+        );
+      }
+    }
+
+    loadStatus();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <main className="dashboard">
+      <section className="dashboard__toolbar">
+        <div>
+          <p className="section-label">Operations</p>
+          <h2>Systemstatus</h2>
+          <p className="dashboard__toolbar-copy">
+            Ueberblick ueber API-Erreichbarkeit, Readiness und die aktive Session.
+          </p>
+        </div>
+      </section>
+
+      {error ? (
+        <section className="state-panel state-panel--error">
+          <h3>Status konnte nicht geladen werden</h3>
+          <p>{error}</p>
+        </section>
+      ) : (
+        <section className="dashboard-kpi-grid">
+          <article className="dashboard-kpi-card">
+            <p className="machine-card__label">Health</p>
+            <strong>{health?.status ?? "-"}</strong>
+            <p className="detail-list__muted">{health?.timestamp ? formatDate(health.timestamp) : ""}</p>
+          </article>
+          <article className="dashboard-kpi-card">
+            <p className="machine-card__label">Readiness</p>
+            <strong>{readiness?.status ?? "-"}</strong>
+            <p className="detail-list__muted">
+              DB: {readiness?.database ?? "unbekannt"}
+            </p>
+          </article>
+          <article className="dashboard-kpi-card">
+            <p className="machine-card__label">Aktiver Benutzer</p>
+            <strong>{user?.email ?? "-"}</strong>
+            <p className="detail-list__muted">Rolle: {user?.role ?? "-"}</p>
+          </article>
+        </section>
+      )}
+    </main>
+  );
+}
+
+function UsersPage() {
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadUsers() {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const items = await getUsers();
+        if (!active) {
+          return;
+        }
+        setUsers(items);
+      } catch (loadError) {
+        if (!active) {
+          return;
+        }
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Benutzer konnten nicht geladen werden.",
+        );
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadUsers();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <main className="dashboard">
+      <section className="dashboard__toolbar">
+        <div>
+          <p className="section-label">Administration</p>
+          <h2>Benutzer und Rollen</h2>
+          <p className="dashboard__toolbar-copy">
+            Aktuell verfuegbare Demo- und Projektkonten im Auth-System.
+          </p>
+        </div>
+      </section>
+
+      {isLoading ? (
+        <section className="state-panel">
+          <h3>Benutzer werden geladen</h3>
+          <p>Die Rollenstruktur wird aus dem Backend abgerufen.</p>
+        </section>
+      ) : null}
+
+      {!isLoading && error ? (
+        <section className="state-panel state-panel--error">
+          <h3>Benutzer konnten nicht geladen werden</h3>
+          <p>{error}</p>
+        </section>
+      ) : null}
+
+      {!isLoading && !error ? (
+        <section className="table-card">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>E-Mail</th>
+                <th>Rolle</th>
+                <th>Status</th>
+                <th>Erstellt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((entry) => (
+                <tr key={entry.id}>
+                  <td>{entry.email}</td>
+                  <td>{entry.role}</td>
+                  <td>{entry.is_active ? "aktiv" : "inaktiv"}</td>
+                  <td>{formatDate(entry.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
+    </main>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+
+      <Route element={<RequireAuth />}>
+        <Route element={<AppFrame />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<OperationsWorkspace mode="dashboard" />} />
+          <Route path="/machines" element={<OperationsWorkspace mode="machines" />} />
+          <Route
+            path="/sensor-data"
+            element={<OperationsWorkspace mode="sensor-data" />}
+          />
+          <Route
+            path="/maintenance"
+            element={<OperationsWorkspace mode="maintenance" />}
+          />
+          <Route path="/analysis" element={<OperationsWorkspace mode="analysis" />} />
+          <Route path="/system-status" element={<SystemStatusPage />} />
+          <Route element={<RoleGate allowedRoles={["admin"]} />}>
+            <Route path="/users" element={<UsersPage />} />
+          </Route>
+        </Route>
+      </Route>
+
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   );
 }
