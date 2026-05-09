@@ -7,6 +7,7 @@ os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 from app.database import Base, SessionLocal, engine
 from app.main import app
 from app.services.machine_service import seed_default_machines
+from app.services.user_service import seed_demo_users
 
 client = TestClient(app)
 
@@ -17,8 +18,19 @@ def setup_function():
     db = SessionLocal()
     try:
         seed_default_machines(db)
+        seed_demo_users(db)
     finally:
         db.close()
+
+
+def auth_headers(email: str, password: str):
+    response = client.post(
+        "/auth/login",
+        json={"email": email, "password": password},
+    )
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
 def valid_payload():
@@ -81,7 +93,10 @@ def test_health_ready():
 
 
 def test_get_machines():
-    response = client.get("/machines")
+    response = client.get(
+        "/machines",
+        headers=auth_headers("viewer@maintcloud.local", "MaintCloudViewer!2026"),
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -93,7 +108,10 @@ def test_get_machines():
 
 
 def test_get_machine_by_id():
-    response = client.get("/machines/M-1001")
+    response = client.get(
+        "/machines/M-1001",
+        headers=auth_headers("viewer@maintcloud.local", "MaintCloudViewer!2026"),
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -105,6 +123,7 @@ def test_post_machine():
     response = client.post(
         "/machines",
         json={"id": "M-2001", "name": "Laser Cutter", "type": "Cutter"},
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
     )
     assert response.status_code == 201
 
@@ -118,6 +137,7 @@ def test_put_machine():
     response = client.put(
         "/machines/M-1001",
         json={"name": "Hydraulic Press X", "type": "Press Line"},
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
     )
     assert response.status_code == 200
 
@@ -128,19 +148,41 @@ def test_put_machine():
 
 
 def test_delete_machine_removes_related_data():
-    client.post("/maintenance-records", json=valid_maintenance_payload())
-    client.post("/sensor-data", json=valid_payload())
+    technician_headers = auth_headers(
+        "tech@maintcloud.local", "MaintCloudTech!2026"
+    )
+    admin_headers = auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026")
 
-    response = client.delete("/machines/M-1001")
+    client.post(
+        "/maintenance-records",
+        json=valid_maintenance_payload(),
+        headers=technician_headers,
+    )
+    client.post("/sensor-data", json=valid_payload(), headers=technician_headers)
+
+    response = client.delete("/machines/M-1001", headers=admin_headers)
     assert response.status_code == 204
 
-    assert client.get("/machines/M-1001").status_code == 404
-    assert client.get("/machines/M-1001/maintenance-records").json()["count"] == 0
-    assert client.get("/machines/M-1001/sensor-data").json()["count"] == 0
+    assert client.get("/machines/M-1001", headers=admin_headers).status_code == 404
+    assert (
+        client.get(
+            "/machines/M-1001/maintenance-records",
+            headers=admin_headers,
+        ).json()["count"]
+        == 0
+    )
+    assert (
+        client.get("/machines/M-1001/sensor-data", headers=admin_headers).json()["count"]
+        == 0
+    )
 
 
 def test_post_prediction():
-    response = client.post("/prediction", json=valid_payload())
+    response = client.post(
+        "/prediction",
+        json=valid_payload(),
+        headers=auth_headers("viewer@maintcloud.local", "MaintCloudViewer!2026"),
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -152,7 +194,11 @@ def test_post_prediction():
 
 
 def test_post_sensor_data():
-    response = client.post("/sensor-data", json=valid_payload())
+    response = client.post(
+        "/sensor-data",
+        json=valid_payload(),
+        headers=auth_headers("tech@maintcloud.local", "MaintCloudTech!2026"),
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -164,7 +210,11 @@ def test_post_sensor_data():
 
 
 def test_post_maintenance_record():
-    response = client.post("/maintenance-records", json=valid_maintenance_payload())
+    response = client.post(
+        "/maintenance-records",
+        json=valid_maintenance_payload(),
+        headers=auth_headers("tech@maintcloud.local", "MaintCloudTech!2026"),
+    )
     assert response.status_code == 201
 
     data = response.json()
@@ -176,7 +226,9 @@ def test_post_maintenance_record():
 
 def test_put_maintenance_record():
     create_response = client.post(
-        "/maintenance-records", json=valid_maintenance_payload()
+        "/maintenance-records",
+        json=valid_maintenance_payload(),
+        headers=auth_headers("tech@maintcloud.local", "MaintCloudTech!2026"),
     )
     record_id = create_response.json()["id"]
 
@@ -189,6 +241,7 @@ def test_put_maintenance_record():
             "technician": "Halil Ibrahim",
             "performed_at": "2026-04-17T08:15:00",
         },
+        headers=auth_headers("tech@maintcloud.local", "MaintCloudTech!2026"),
     )
     assert response.status_code == 200
 
@@ -200,21 +253,36 @@ def test_put_maintenance_record():
 
 def test_delete_maintenance_record():
     create_response = client.post(
-        "/maintenance-records", json=valid_maintenance_payload()
+        "/maintenance-records",
+        json=valid_maintenance_payload(),
+        headers=auth_headers("tech@maintcloud.local", "MaintCloudTech!2026"),
     )
     record_id = create_response.json()["id"]
 
-    response = client.delete(f"/maintenance-records/{record_id}")
+    response = client.delete(
+        f"/maintenance-records/{record_id}",
+        headers=auth_headers("tech@maintcloud.local", "MaintCloudTech!2026"),
+    )
     assert response.status_code == 204
 
-    data = client.get("/maintenance-records").json()
+    data = client.get(
+        "/maintenance-records",
+        headers=auth_headers("viewer@maintcloud.local", "MaintCloudViewer!2026"),
+    ).json()
     assert data["count"] == 0
 
 
 def test_get_maintenance_records():
-    client.post("/maintenance-records", json=valid_maintenance_payload())
+    client.post(
+        "/maintenance-records",
+        json=valid_maintenance_payload(),
+        headers=auth_headers("tech@maintcloud.local", "MaintCloudTech!2026"),
+    )
 
-    response = client.get("/maintenance-records")
+    response = client.get(
+        "/maintenance-records",
+        headers=auth_headers("viewer@maintcloud.local", "MaintCloudViewer!2026"),
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -224,9 +292,16 @@ def test_get_maintenance_records():
 
 
 def test_get_machine_maintenance_records():
-    client.post("/maintenance-records", json=valid_maintenance_payload())
+    client.post(
+        "/maintenance-records",
+        json=valid_maintenance_payload(),
+        headers=auth_headers("tech@maintcloud.local", "MaintCloudTech!2026"),
+    )
 
-    response = client.get("/machines/M-1001/maintenance-records")
+    response = client.get(
+        "/machines/M-1001/maintenance-records",
+        headers=auth_headers("viewer@maintcloud.local", "MaintCloudViewer!2026"),
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -236,9 +311,16 @@ def test_get_machine_maintenance_records():
 
 
 def test_get_sensor_data():
-    client.post("/sensor-data", json=valid_payload())
+    client.post(
+        "/sensor-data",
+        json=valid_payload(),
+        headers=auth_headers("tech@maintcloud.local", "MaintCloudTech!2026"),
+    )
 
-    response = client.get("/sensor-data")
+    response = client.get(
+        "/sensor-data",
+        headers=auth_headers("viewer@maintcloud.local", "MaintCloudViewer!2026"),
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -249,9 +331,16 @@ def test_get_sensor_data():
 
 
 def test_get_machine_sensor_data():
-    client.post("/sensor-data", json=valid_payload())
+    client.post(
+        "/sensor-data",
+        json=valid_payload(),
+        headers=auth_headers("tech@maintcloud.local", "MaintCloudTech!2026"),
+    )
 
-    response = client.get("/machines/M-1001/sensor-data")
+    response = client.get(
+        "/machines/M-1001/sensor-data",
+        headers=auth_headers("viewer@maintcloud.local", "MaintCloudViewer!2026"),
+    )
     assert response.status_code == 200
 
     data = response.json()
@@ -260,3 +349,43 @@ def test_get_machine_sensor_data():
     assert "items" in data
     assert isinstance(data["items"], list)
     assert data["count"] == 1
+
+
+def test_login_returns_access_token_and_user():
+    response = client.post(
+        "/auth/login",
+        json={
+            "email": "admin@maintcloud.local",
+            "password": "MaintCloudAdmin!2026",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["token_type"] == "bearer"
+    assert data["access_token"]
+    assert data["user"]["email"] == "admin@maintcloud.local"
+    assert data["user"]["role"] == "admin"
+
+
+def test_viewer_cannot_create_machine():
+    response = client.post(
+        "/machines",
+        json={"id": "M-3001", "name": "Viewer Attempt", "type": "Test"},
+        headers=auth_headers("viewer@maintcloud.local", "MaintCloudViewer!2026"),
+    )
+
+    assert response.status_code == 403
+
+
+def test_admin_can_list_users():
+    response = client.get(
+        "/users",
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["count"] >= 3
+    emails = [item["email"] for item in data["items"]]
+    assert "admin@maintcloud.local" in emails

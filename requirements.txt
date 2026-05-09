@@ -4,3 +4,6 @@ pydantic
 sqlalchemy
 psycopg[binary]
 alembic
+passlib[bcrypt]
+bcrypt<5
+PyJWT

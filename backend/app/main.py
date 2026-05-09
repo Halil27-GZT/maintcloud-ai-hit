@@ -8,6 +8,7 @@ from app.logging_config import configure_logging
 from app.migrations import upgrade_database
 from app.monitoring import RequestLoggingMiddleware
 from app.routes import (
+    auth,
     health,
     machines,
     maintenance_records,
@@ -16,6 +17,7 @@ from app.routes import (
     sensor_data,
 )
 from app.services.machine_service import seed_default_machines
+from app.services.user_service import seed_demo_users
 
 
 configure_logging()
@@ -30,6 +32,7 @@ async def lifespan(_: FastAPI):
     db = SessionLocal()
     try:
         seed_default_machines(db)
+        seed_demo_users(db)
         logger.info("application startup complete")
     finally:
         db.close()
@@ -60,6 +63,7 @@ app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(root.router)
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(machines.router)
 app.include_router(maintenance_records.router)
 app.include_router(sensor_data.router)

@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 
 from pydantic import BaseModel
 
@@ -20,6 +21,12 @@ class HealthResponse(BaseModel):
 
 class ReadinessResponse(HealthResponse):
     database: str
+
+
+class UserRole(str, Enum):
+    admin = "admin"
+    technician = "technician"
+    viewer = "viewer"
 
 
 class MachineBase(BaseModel):
@@ -106,3 +113,27 @@ class PredictionResult(BaseModel):
     status: str
     message: str
     recommendation: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    role: UserRole
+    is_active: bool
+    created_at: datetime
+
+
+class UserListResponse(BaseModel):
+    count: int
+    items: list[UserResponse]
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse

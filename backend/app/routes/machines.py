@@ -1,8 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db
-from app.models import ErrorResponse, MachineCreate, MachineResponse, MachineUpdate
+from app.dependencies import get_db, require_roles
+from app.models import (
+    ErrorResponse,
+    MachineCreate,
+    MachineResponse,
+    MachineUpdate,
+    UserResponse,
+    UserRole,
+)
 from app.services.machine_service import (
     create_machine,
     delete_machine,
@@ -16,7 +23,12 @@ router = APIRouter()
 
 
 @router.get("/machines", response_model=list[MachineResponse])
-def get_machines(db: Session = Depends(get_db)):
+def get_machines(
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(
+        require_roles(UserRole.admin, UserRole.technician, UserRole.viewer)
+    ),
+):
     return list_machines(db)
 
 
@@ -25,7 +37,13 @@ def get_machines(db: Session = Depends(get_db)):
     response_model=MachineResponse,
     responses={404: {"model": ErrorResponse, "description": "Machine not found"}},
 )
-def get_machine(machine_id: str, db: Session = Depends(get_db)):
+def get_machine(
+    machine_id: str,
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(
+        require_roles(UserRole.admin, UserRole.technician, UserRole.viewer)
+    ),
+):
     machine = get_machine_by_id(db, machine_id)
     if machine is None:
         raise HTTPException(status_code=404, detail="Machine not found")
@@ -38,7 +56,11 @@ def get_machine(machine_id: str, db: Session = Depends(get_db)):
     status_code=201,
     responses={409: {"model": ErrorResponse, "description": "Machine already exists"}},
 )
-def add_machine(machine_data: MachineCreate, db: Session = Depends(get_db)):
+def add_machine(
+    machine_data: MachineCreate,
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(require_roles(UserRole.admin)),
+):
     existing = get_machine_by_id(db, machine_data.id)
     if existing is not None:
         raise HTTPException(status_code=409, detail="Machine already exists")
@@ -51,7 +73,10 @@ def add_machine(machine_data: MachineCreate, db: Session = Depends(get_db)):
     responses={404: {"model": ErrorResponse, "description": "Machine not found"}},
 )
 def edit_machine(
-    machine_id: str, machine_data: MachineUpdate, db: Session = Depends(get_db)
+    machine_id: str,
+    machine_data: MachineUpdate,
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(require_roles(UserRole.admin)),
 ):
     machine = update_machine(db, machine_id, machine_data)
     if machine is None:
@@ -64,7 +89,11 @@ def edit_machine(
     status_code=204,
     responses={404: {"model": ErrorResponse, "description": "Machine not found"}},
 )
-def remove_machine(machine_id: str, db: Session = Depends(get_db)):
+def remove_machine(
+    machine_id: str,
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(require_roles(UserRole.admin)),
+):
     deleted = delete_machine(db, machine_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Machine not found")

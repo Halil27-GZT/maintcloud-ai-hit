@@ -38,7 +38,8 @@ Aktueller Stand:
 - Backend, Frontend, Docker und CI eingerichtet
 - PostgreSQL, Reverse Proxy und lokales HTTPS fuer den Standard-Stack eingerichtet
 - Healthchecks, Request Logging und Alembic-Migrationen integriert
-- naechster Schwerpunkt: Betriebskonzept vervollstaendigen und Frontend weiter ausbauen
+- JWT-Login, Rollenmodell und Demo-User im Backend integriert
+- naechster Schwerpunkt: Frontend in eine echte App-Struktur mit Routing, Login-Seite und geschuetzten Bereichen ueberfuehren
 
 ---
 
@@ -63,6 +64,25 @@ Wenn du die Anwendung einfach benutzen willst, sind das die wichtigsten Einstieg
 - App: `https://localhost:5443`
 - API: `https://localhost:5443/api`
 - Swagger UI: `https://localhost:5443/docs`
+
+## Demo-User fuer API-Login
+
+Aktuell ist die Backend-Authentifizierung bereits vorhanden. Fuer lokale Demo- und Testzwecke werden diese Benutzer beim Start idempotent angelegt:
+
+- Admin: `admin@maintcloud.local`
+- Technician: `tech@maintcloud.local`
+- Viewer: `viewer@maintcloud.local`
+
+Demo-Passwoerter:
+
+- `MaintCloudAdmin!2026`
+- `MaintCloudTech!2026`
+- `MaintCloudViewer!2026`
+
+Hinweis:
+
+- Die Login-API ist unter `POST /auth/login` verfuegbar.
+- Das Frontend-Login und rollenabhaengige Oberflaechen befinden sich noch im naechsten Umbauabschnitt.
 
 Der Standard-Stack ist der produktionsnaehere lokale Betriebsweg mit:
 
@@ -146,6 +166,8 @@ Wichtige Root-Variablen in `.env`:
 - `POSTGRES_PASSWORD`
 - `POSTGRES_PORT`
 - `BACKEND_LOG_LEVEL`
+- `JWT_SECRET_KEY`
+- `ACCESS_TOKEN_EXPIRE_MINUTES`
 - `PROXY_HTTP_PORT`
 - `PROXY_HTTPS_PORT`
 - `SERVER_NAME`

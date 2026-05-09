@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db
+from app.dependencies import get_db, require_roles
 from app.models import (
     ErrorResponse,
     MaintenanceRecordCreate,
@@ -9,6 +9,8 @@ from app.models import (
     MaintenanceRecordResponse,
     MaintenanceRecordUpdate,
     MachineMaintenanceRecordListResponse,
+    UserResponse,
+    UserRole,
 )
 from app.services.machine_service import get_machine_by_id
 from app.services.maintenance_service import (
@@ -30,7 +32,9 @@ router = APIRouter()
     responses={404: {"model": ErrorResponse, "description": "Machine not found"}},
 )
 def add_maintenance_record(
-    record_data: MaintenanceRecordCreate, db: Session = Depends(get_db)
+    record_data: MaintenanceRecordCreate,
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(require_roles(UserRole.admin, UserRole.technician)),
 ):
     machine = get_machine_by_id(db, record_data.machine_id)
     if machine is None:
@@ -42,7 +46,12 @@ def add_maintenance_record(
     "/maintenance-records",
     response_model=MaintenanceRecordListResponse,
 )
-def get_maintenance_records(db: Session = Depends(get_db)):
+def get_maintenance_records(
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(
+        require_roles(UserRole.admin, UserRole.technician, UserRole.viewer)
+    ),
+):
     items = list_maintenance_records(db)
     return {"count": len(items), "items": items}
 
@@ -52,7 +61,11 @@ def get_maintenance_records(db: Session = Depends(get_db)):
     response_model=MachineMaintenanceRecordListResponse,
 )
 def get_maintenance_records_by_machine(
-    machine_id: str, db: Session = Depends(get_db)
+    machine_id: str,
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(
+        require_roles(UserRole.admin, UserRole.technician, UserRole.viewer)
+    ),
 ):
     items = list_maintenance_records_by_machine(db, machine_id)
     return {"machine_id": machine_id, "count": len(items), "items": items}
@@ -69,6 +82,7 @@ def edit_maintenance_record(
     record_id: int,
     record_data: MaintenanceRecordUpdate,
     db: Session = Depends(get_db),
+    _: UserResponse = Depends(require_roles(UserRole.admin, UserRole.technician)),
 ):
     machine = get_machine_by_id(db, record_data.machine_id)
     if machine is None:
@@ -87,7 +101,11 @@ def edit_maintenance_record(
         404: {"model": ErrorResponse, "description": "Maintenance record not found"}
     },
 )
-def remove_maintenance_record(record_id: int, db: Session = Depends(get_db)):
+def remove_maintenance_record(
+    record_id: int,
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(require_roles(UserRole.admin, UserRole.technician)),
+):
     deleted = delete_maintenance_record(db, record_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Maintenance record not found")

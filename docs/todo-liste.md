@@ -41,6 +41,20 @@ Diese ToDo-Liste bildet den aktuellen technischen Stand des Projekts ab und prio
 - [x] Fehlerzustaende im Frontend besser darstellen
 - [x] Konfigurierbare API-Umgebungen fuer Dev und spaeteres Deployment absichern
 
+### Phase 7 - App-Struktur, Auth und Rollen
+
+- [ ] Bestehende Frontend-Struktur analysieren und in Seiten, Layout und wiederverwendbare UI-Bloecke zerlegen
+- [ ] Sidebar-, Topbar- und Routing-Konzept fuer eine echte Multi-Page-App-Struktur umsetzen
+- [ ] Login- und Logout-Flow mit geschuetzten Bereichen planen und integrieren
+- [x] Benutzer-, Rollen- und Auth-Modell im Backend einfuehren
+- [x] JWT-Authentifizierung und serverseitige Rollenpruefung fuer bestehende Endpunkte ergaenzen
+- [x] Demo-User fuer Admin, Technician und Viewer idempotent seeden
+- [ ] Rollenabhaengige Navigation, Buttons und Aktionen im Frontend umsetzen
+- [ ] Bestehende Fachbereiche auf eigene Seiten aufteilen: Dashboard, Maschinen, Sensordaten, Wartung, Analyse, Systemstatus
+- [ ] Frontend-Komponenten modularisieren und grosse monolithische UI-Logik schrittweise zerlegen
+- [x] Auth-, Rollen- und Zugriffsfaelle mit Tests absichern
+- [ ] README, ENV-Beispiele und Startanleitung fuer Login, Rollen und neue App-Struktur aktualisieren
+
 ### Qualitaet und Betrieb
 
 - [x] README auf aktuellen Architektur- und Betriebsstand anpassen
@@ -61,4 +75,4 @@ Diese ToDo-Liste bildet den aktuellen technischen Stand des Projekts ab und prio
 
 ## Fokus
 
-Der aktuelle Fokus liegt nicht mehr auf Backend-Grundlagen, sondern auf Architektur, Deployment und sauberer Projektkommunikation.
+Der aktuelle Fokus liegt auf dem Umbau von MaintCloud AI zu einer professionelleren Web-App-Struktur mit Routing, Authentifizierung, Rollenmodell und klar getrennten Fachbereichen, ohne bestehende Funktionen zu verlieren.

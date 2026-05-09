@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db
+from app.dependencies import get_db, require_roles
 from app.models import (
     MachineSensorDataListResponse,
     SensorData,
     SensorDataCreateResponse,
     SensorDataListResponse,
+    UserResponse,
+    UserRole,
 )
 from app.services.sensor_data_service import (
     create_sensor_data,
@@ -19,7 +21,11 @@ router = APIRouter()
 
 
 @router.post("/sensor-data", response_model=SensorDataCreateResponse)
-def add_sensor_data(sensor_data: SensorData, db: Session = Depends(get_db)):
+def add_sensor_data(
+    sensor_data: SensorData,
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(require_roles(UserRole.admin, UserRole.technician)),
+):
     entry = create_sensor_data(db, sensor_data)
 
     return {
@@ -29,7 +35,12 @@ def add_sensor_data(sensor_data: SensorData, db: Session = Depends(get_db)):
 
 
 @router.get("/sensor-data", response_model=SensorDataListResponse)
-def get_sensor_data(db: Session = Depends(get_db)):
+def get_sensor_data(
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(
+        require_roles(UserRole.admin, UserRole.technician, UserRole.viewer)
+    ),
+):
     items = list_sensor_data(db)
 
     return {
@@ -42,7 +53,13 @@ def get_sensor_data(db: Session = Depends(get_db)):
     "/machines/{machine_id}/sensor-data",
     response_model=MachineSensorDataListResponse,
 )
-def get_sensor_data_by_machine(machine_id: str, db: Session = Depends(get_db)):
+def get_sensor_data_by_machine(
+    machine_id: str,
+    db: Session = Depends(get_db),
+    _: UserResponse = Depends(
+        require_roles(UserRole.admin, UserRole.technician, UserRole.viewer)
+    ),
+):
     items = list_sensor_data_by_machine(db, machine_id)
 
     return {

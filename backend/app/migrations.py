@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, inspect
 from app.database import DATABASE_URL
 
 
-MANAGED_TABLES = {"machines", "maintenance_records", "sensor_data"}
+MANAGED_TABLES = {"machines", "maintenance_records", "sensor_data", "users"}
 
 
 def upgrade_database() -> None:

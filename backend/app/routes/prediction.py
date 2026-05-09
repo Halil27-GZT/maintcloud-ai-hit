@@ -1,6 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from app.models import PredictionResult, SensorData
+from app.dependencies import require_roles
+from app.models import PredictionResult, SensorData, UserResponse, UserRole
 from app.scoring import calculate_risk
 
 
@@ -8,7 +9,12 @@ router = APIRouter()
 
 
 @router.post("/prediction", response_model=PredictionResult)
-def predict(sensor_data: SensorData):
+def predict(
+    sensor_data: SensorData,
+    _: UserResponse = Depends(
+        require_roles(UserRole.admin, UserRole.technician, UserRole.viewer)
+    ),
+):
     result = calculate_risk(sensor_data)
 
     return PredictionResult(
