@@ -714,7 +714,7 @@ function MachineCard({ machine, sensorEntry, isSelected, onSelect, onEdit }) {
         </div>
         <div>
           <dt>Temperatur</dt>
-          <dd>{sensorEntry ? `${sensorEntry.temperature} °C` : "-"}</dd>
+          <dd>{sensorEntry ? `${sensorEntry.temperature} deg C` : "-"}</dd>
         </div>
         <div>
           <dt>Vibration</dt>
@@ -851,7 +851,7 @@ function MachineDetailPanel({
               />
               <DetailMetric
                 label="Temperatur"
-                value={formatNumber(latestHistoryEntry?.temperature, " °C")}
+                value={formatNumber(latestHistoryEntry?.temperature, " deg C")}
               />
               <DetailMetric
                 label="Vibration"
@@ -1505,7 +1505,7 @@ export default function App() {
           <p className="hero__kicker">A Solution by H.I.T.</p>
           <h1>MaintCloud AI</h1>
           <p className="hero__lead">
-            Maschinenübersicht für Zustandsbewertung, Wartungsplanung und den
+            Maschinenuebersicht fuer Zustandsbewertung, Wartungsplanung und den
             Einstieg in Predictive Maintenance.
           </p>
         </div>
@@ -1522,11 +1522,11 @@ export default function App() {
         <section className="dashboard__toolbar">
           <div>
             <p className="section-label">Startseite</p>
-            <h2>Maschinenübersicht</h2>
+            <h2>Maschinenuebersicht</h2>
           </div>
           <div className="dashboard__summary">
             <span>{machines.length} Maschinen</span>
-            <span>{sensorData.length} Sensordatensätze</span>
+            <span>{sensorData.length} Sensordatensaetze</span>
           </div>
         </section>
 
@@ -1561,7 +1561,7 @@ export default function App() {
             <h3>API-Verbindung fehlgeschlagen</h3>
             <p>{error}</p>
             <p>
-              Prüfe, ob Backend oder Proxy unter <code>{API_BASE_URL}</code> erreichbar
+              Pruefe, ob Backend oder Proxy unter <code>{API_BASE_URL}</code> erreichbar
               sind und die API-Konfiguration zur aktuellen Umgebung passt.
             </p>
             <button
