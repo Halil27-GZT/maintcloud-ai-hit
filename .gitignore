@@ -22,3 +22,6 @@ frontend/.env
 
 # Root environment files
 .env
+
+# Runtime logs
+backend/uvicorn-*.log

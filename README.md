@@ -201,7 +201,7 @@ Fuer diesen Weg sind zusaetzlich vor allem diese Root-Variablen relevant:
 
 - `FRONTEND_DEV_PORT`
 - `BACKEND_DEV_PORT`
-- `FRONTEND_DEV_API_BASE_URL`
+- `VITE_DEV_PROXY_TARGET`
 
 ## Direkter Start im Terminal
 
