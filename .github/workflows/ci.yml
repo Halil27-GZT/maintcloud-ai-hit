@@ -77,16 +77,22 @@ jobs:
 
       - name: Auf PostgreSQL warten
         run: |
-          python -c "import time, psycopg; deadline = time.time() + 60; last_error = None
-for _ in range(60):
-    try:
-        with psycopg.connect('postgresql://maintcloud:maintcloud@localhost:5432/maintcloud') as conn:
-            conn.execute('SELECT 1')
-        raise SystemExit(0)
-    except Exception as exc:
-        last_error = exc
-        time.sleep(1)
-raise SystemExit(f'PostgreSQL not ready: {last_error}')"
+          python - <<'PY'
+          import time
+          import psycopg
+
+          last_error = None
+          for _ in range(60):
+              try:
+                  with psycopg.connect("postgresql://maintcloud:maintcloud@localhost:5432/maintcloud") as conn:
+                      conn.execute("SELECT 1")
+                  raise SystemExit(0)
+              except Exception as exc:
+                  last_error = exc
+                  time.sleep(1)
+
+          raise SystemExit(f"PostgreSQL not ready: {last_error}")
+          PY
 
       - name: PostgreSQL-Integrationstest ausfuehren
         run: |
