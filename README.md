@@ -246,6 +246,20 @@ python -m alembic current
 
 Wenn du lokal ohne Docker arbeitest, muessen die Python-Abhaengigkeiten aus `requirements.txt` installiert sein.
 
+## Teststrategie
+
+Das Projekt nutzt bewusst zwei Testpfade:
+
+- Standard-`pytest`-Lauf mit SQLite fuer schnelles Feedback
+- separater PostgreSQL-Integrationslauf fuer den produktionsnaeheren Stack
+
+Beispiele:
+
+```bash
+cd backend
+pytest -m "not integration_postgres"
+pytest -m integration_postgres tests/test_postgres_integration.py
+```
 Standardmaessig verwendet das Frontend je nach Betriebsweg unterschiedliche API-Basen:
 
 - Direkter lokaler Vite-Start: `http://localhost:8000`
