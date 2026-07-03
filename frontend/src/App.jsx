@@ -13,6 +13,7 @@ import {
   createMachine,
   createMaintenanceRecord,
   createSensorData,
+  createUser,
   deleteMachine,
   deleteMaintenanceRecord,
   getMachine,
@@ -25,6 +26,8 @@ import {
   getUsers,
   updateMachine,
   updateMaintenanceRecord,
+  updateUserRole,
+  updateUserStatus,
 } from "./api";
 import { useAuth } from "./auth";
 import LoginPage from "./LoginPage";
@@ -1962,45 +1965,131 @@ function SystemStatusPage() {
 }
 
 function UsersPage() {
+  const roleOptions = ["admin", "technician", "viewer"];
+  const roleLabels = {
+    admin: "Admin",
+    technician: "Technician",
+    viewer: "Viewer",
+  };
+  const emptyDraft = {
+    email: "",
+    password: "",
+    role: "viewer",
+  };
+
   const [users, setUsers] = useState([]);
+  const [roleDrafts, setRoleDrafts] = useState({});
+  const [userDraft, setUserDraft] = useState(emptyDraft);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [updatingUserId, setUpdatingUserId] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  async function loadUsers() {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const items = await getUsers();
+      setUsers(items);
+      setRoleDrafts(
+        Object.fromEntries(items.map((entry) => [entry.id, entry.role])),
+      );
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Benutzer konnten nicht geladen werden.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let active = true;
+    loadUsers();
+  }, []);
 
-    async function loadUsers() {
-      setIsLoading(true);
-      setError("");
+  async function handleCreateUser(event) {
+    event.preventDefault();
+    setIsCreating(true);
+    setSubmitError("");
+    setSuccessMessage("");
 
-      try {
-        const items = await getUsers();
-        if (!active) {
-          return;
-        }
-        setUsers(items);
-      } catch (loadError) {
-        if (!active) {
-          return;
-        }
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Benutzer konnten nicht geladen werden.",
-        );
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
-      }
+    try {
+      const createdUser = await createUser(userDraft);
+      await loadUsers();
+      setUserDraft(emptyDraft);
+      setShowPassword(false);
+      setSuccessMessage(`Benutzer ${createdUser.email} wurde angelegt.`);
+    } catch (createError) {
+      setSubmitError(
+        createError instanceof Error
+          ? createError.message
+          : "Benutzer konnte nicht angelegt werden.",
+      );
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
+  async function handleRoleSave(user) {
+    const nextRole = roleDrafts[user.id] ?? user.role;
+
+    if (nextRole === user.role) {
+      return;
     }
 
-    loadUsers();
+    setUpdatingUserId(user.id);
+    setSubmitError("");
+    setSuccessMessage("");
 
-    return () => {
-      active = false;
-    };
-  }, []);
+    try {
+      const updatedUser = await updateUserRole(user.id, { role: nextRole });
+      await loadUsers();
+      setSuccessMessage(`Rolle fuer ${updatedUser.email} wurde aktualisiert.`);
+    } catch (updateError) {
+      setSubmitError(
+        updateError instanceof Error
+          ? updateError.message
+          : "Rolle konnte nicht aktualisiert werden.",
+      );
+    } finally {
+      setUpdatingUserId(null);
+    }
+  }
+
+  async function handleStatusToggle(user) {
+    const nextStatus = !user.is_active;
+    const actionLabel = nextStatus ? "aktivieren" : "deaktivieren";
+
+    if (!window.confirm(`Benutzer ${user.email} wirklich ${actionLabel}?`)) {
+      return;
+    }
+
+    setUpdatingUserId(user.id);
+    setSubmitError("");
+    setSuccessMessage("");
+
+    try {
+      const updatedUser = await updateUserStatus(user.id, { is_active: nextStatus });
+      await loadUsers();
+      setSuccessMessage(
+        `Status fuer ${updatedUser.email} wurde auf ${updatedUser.is_active ? "aktiv" : "inaktiv"} gesetzt.`,
+      );
+    } catch (updateError) {
+      setSubmitError(
+        updateError instanceof Error
+          ? updateError.message
+          : "Status konnte nicht aktualisiert werden.",
+      );
+    } finally {
+      setUpdatingUserId(null);
+    }
+  }
 
   return (
     <main className="dashboard">
@@ -2009,49 +2098,240 @@ function UsersPage() {
           <p className="section-label">Administration</p>
           <h2>Benutzer und Rollen</h2>
           <p className="dashboard__toolbar-copy">
-            Aktuell verfuegbare Demo- und Projektkonten im Auth-System.
+            Demo- und Projektkonten anlegen, Rollen pflegen und Konten gezielt aktivieren.
           </p>
+        </div>
+        <div className="dashboard__summary">
+          <span>{users.length} Konten</span>
+          <span>{users.filter((entry) => entry.is_active).length} aktiv</span>
+          <span>{users.filter((entry) => !entry.is_active).length} inaktiv</span>
         </div>
       </section>
 
-      {isLoading ? (
-        <section className="state-panel">
-          <h3>Benutzer werden geladen</h3>
-          <p>Die Rollenstruktur wird aus dem Backend abgerufen.</p>
-        </section>
-      ) : null}
+      <section className="user-admin-grid">
+        <section className="table-card user-admin-card">
+          <div className="detail-section__heading">
+            <div>
+              <h3>Neuen Benutzer anlegen</h3>
+              <p className="dashboard__toolbar-copy">
+                Neue Projektkonten direkt mit Rolle und Startpasswort erfassen.
+              </p>
+            </div>
+            <button
+              className="detail-utility-button"
+              type="button"
+              onClick={() => {
+                setUserDraft(emptyDraft);
+                setShowPassword(false);
+                setSubmitError("");
+                setSuccessMessage("");
+              }}
+              disabled={isCreating || updatingUserId !== null}
+            >
+              Formular leeren
+            </button>
+          </div>
 
-      {!isLoading && error ? (
-        <section className="state-panel state-panel--error">
-          <h3>Benutzer konnten nicht geladen werden</h3>
-          <p>{error}</p>
-        </section>
-      ) : null}
+          <form className="user-form" onSubmit={handleCreateUser}>
+            <div className="machine-composer__grid">
+              <label className="machine-composer__field">
+                <span>E-Mail</span>
+                <input
+                  name="email"
+                  type="email"
+                  value={userDraft.email}
+                  onChange={(event) =>
+                    setUserDraft((current) => ({
+                      ...current,
+                      email: event.target.value,
+                    }))
+                  }
+                  placeholder="z. B. planner@maintcloud.local"
+                  autoComplete="email"
+                  disabled={isCreating}
+                  required
+                />
+              </label>
 
-      {!isLoading && !error ? (
-        <section className="table-card">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>E-Mail</th>
-                <th>Rolle</th>
-                <th>Status</th>
-                <th>Erstellt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((entry) => (
-                <tr key={entry.id}>
-                  <td>{entry.email}</td>
-                  <td>{entry.role}</td>
-                  <td>{entry.is_active ? "aktiv" : "inaktiv"}</td>
-                  <td>{formatDate(entry.created_at)}</td>
+              <label className="machine-composer__field">
+                <span>Passwort</span>
+                <div className="auth-form__password-wrap">
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={userDraft.password}
+                    onChange={(event) =>
+                      setUserDraft((current) => ({
+                        ...current,
+                        password: event.target.value,
+                      }))
+                    }
+                    placeholder="Mindestens 8 Zeichen"
+                    autoComplete="new-password"
+                    disabled={isCreating}
+                    required
+                  />
+                  <button
+                    className="auth-form__password-toggle"
+                    type="button"
+                    onClick={() => setShowPassword((value) => !value)}
+                    aria-label={showPassword ? "Passwort verbergen" : "Passwort anzeigen"}
+                    aria-pressed={showPassword}
+                  >
+                    Auge
+                  </button>
+                </div>
+              </label>
+
+              <label className="machine-composer__field">
+                <span>Rolle</span>
+                <select
+                  className="table-select"
+                  name="role"
+                  value={userDraft.role}
+                  onChange={(event) =>
+                    setUserDraft((current) => ({
+                      ...current,
+                      role: event.target.value,
+                    }))
+                  }
+                  disabled={isCreating}
+                >
+                  {roleOptions.map((role) => (
+                    <option key={role} value={role}>
+                      {roleLabels[role]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {submitError ? <InlineNotice tone="error">{submitError}</InlineNotice> : null}
+            {!submitError && successMessage ? (
+              <InlineNotice tone="success">{successMessage}</InlineNotice>
+            ) : null}
+
+            <div className="user-form__actions">
+              <button className="machine-card__action" type="submit" disabled={isCreating}>
+                {isCreating ? "Benutzer wird angelegt..." : "Benutzer anlegen"}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        {isLoading ? (
+          <section className="state-panel">
+            <h3>Benutzer werden geladen</h3>
+            <p>Die Rollenstruktur wird aus dem Backend abgerufen.</p>
+          </section>
+        ) : null}
+
+        {!isLoading && error ? (
+          <section className="state-panel state-panel--error">
+            <h3>Benutzer konnten nicht geladen werden</h3>
+            <p>{error}</p>
+            <button className="detail-utility-button" type="button" onClick={loadUsers}>
+              Erneut versuchen
+            </button>
+          </section>
+        ) : null}
+
+        {!isLoading && !error ? (
+          <section className="table-card table-card--wide">
+            <div className="user-admin-table-header">
+              <div>
+                <h3>Konten verwalten</h3>
+                <p className="dashboard__toolbar-copy">
+                  Rollenwechsel und Aktivstatus werden direkt auf das Backend geschrieben.
+                </p>
+              </div>
+              <button className="detail-utility-button" type="button" onClick={loadUsers}>
+                Aktualisieren
+              </button>
+            </div>
+
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>E-Mail</th>
+                  <th>Rolle</th>
+                  <th>Status</th>
+                  <th>Erstellt</th>
+                  <th>Aktionen</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      ) : null}
+              </thead>
+              <tbody>
+                {users.map((entry) => {
+                  const isUpdating = updatingUserId === entry.id;
+                  const selectedRole = roleDrafts[entry.id] ?? entry.role;
+                  const hasRoleChange = selectedRole !== entry.role;
+
+                  return (
+                    <tr key={entry.id}>
+                      <td>{entry.email}</td>
+                      <td>
+                        <select
+                          className="table-select"
+                          value={selectedRole}
+                          onChange={(event) =>
+                            setRoleDrafts((current) => ({
+                              ...current,
+                              [entry.id]: event.target.value,
+                            }))
+                          }
+                          disabled={isUpdating}
+                        >
+                          {roleOptions.map((role) => (
+                            <option key={role} value={role}>
+                              {roleLabels[role]}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <span
+                          className={`table-status-pill ${
+                            entry.is_active
+                              ? "table-status-pill--active"
+                              : "table-status-pill--inactive"
+                          }`}
+                        >
+                          {entry.is_active ? "aktiv" : "inaktiv"}
+                        </span>
+                      </td>
+                      <td>{formatDate(entry.created_at)}</td>
+                      <td>
+                        <div className="data-table__actions">
+                          <button
+                            className="detail-utility-button user-row-button"
+                            type="button"
+                            onClick={() => handleRoleSave(entry)}
+                            disabled={isUpdating || !hasRoleChange}
+                          >
+                            Rolle speichern
+                          </button>
+                          <button
+                            className={`user-row-button ${
+                              entry.is_active
+                                ? "user-row-button--danger"
+                                : "user-row-button--success"
+                            }`}
+                            type="button"
+                            onClick={() => handleStatusToggle(entry)}
+                            disabled={isUpdating}
+                          >
+                            {entry.is_active ? "Deaktivieren" : "Aktivieren"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        ) : null}
+      </section>
     </main>
   );
 }
@@ -2088,3 +2368,4 @@ export default function App() {
     </Routes>
   );
 }
+

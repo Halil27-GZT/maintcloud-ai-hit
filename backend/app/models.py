@@ -128,6 +128,20 @@ class UserListResponse(BaseModel):
     items: list[UserResponse]
 
 
+class UserCreateRequest(BaseModel):
+    email: str
+    password: str
+    role: UserRole
+
+
+class UserRoleUpdateRequest(BaseModel):
+    role: UserRole
+
+
+class UserStatusUpdateRequest(BaseModel):
+    is_active: bool
+
+
 class LoginRequest(BaseModel):
     email: str
     password: str

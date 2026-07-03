@@ -33,6 +33,20 @@ def auth_headers(email: str, password: str):
     return {"Authorization": f"Bearer {token}"}
 
 
+def get_user_id(email: str) -> int:
+    response = client.get(
+        "/users",
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
+    )
+    assert response.status_code == 200
+
+    for item in response.json()["items"]:
+        if item["email"] == email:
+            return item["id"]
+
+    raise AssertionError(f"User {email} not found")
+
+
 def valid_payload():
     return {
         "machine_id": "M-1001",
@@ -389,3 +403,131 @@ def test_admin_can_list_users():
     assert data["count"] >= 3
     emails = [item["email"] for item in data["items"]]
     assert "admin@maintcloud.local" in emails
+
+
+def test_admin_can_create_user():
+    response = client.post(
+        "/users",
+        json={
+            "email": "planner@maintcloud.local",
+            "password": "PlannerPass!2026",
+            "role": "viewer",
+        },
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["email"] == "planner@maintcloud.local"
+    assert data["role"] == "viewer"
+    assert data["is_active"] is True
+
+
+def test_admin_can_update_user_role():
+    create_response = client.post(
+        "/users",
+        json={
+            "email": "planner@maintcloud.local",
+            "password": "PlannerPass!2026",
+            "role": "viewer",
+        },
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
+    )
+    user_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/users/{user_id}/role",
+        json={"role": "technician"},
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["role"] == "technician"
+
+
+def test_admin_can_deactivate_and_reactivate_user():
+    create_response = client.post(
+        "/users",
+        json={
+            "email": "planner@maintcloud.local",
+            "password": "PlannerPass!2026",
+            "role": "viewer",
+        },
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
+    )
+    user_id = create_response.json()["id"]
+
+    deactivate_response = client.patch(
+        f"/users/{user_id}/status",
+        json={"is_active": False},
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
+    )
+    assert deactivate_response.status_code == 200
+    assert deactivate_response.json()["is_active"] is False
+
+    login_response = client.post(
+        "/auth/login",
+        json={
+            "email": "planner@maintcloud.local",
+            "password": "PlannerPass!2026",
+        },
+    )
+    assert login_response.status_code == 401
+
+    reactivate_response = client.patch(
+        f"/users/{user_id}/status",
+        json={"is_active": True},
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
+    )
+    assert reactivate_response.status_code == 200
+    assert reactivate_response.json()["is_active"] is True
+
+    login_response = client.post(
+        "/auth/login",
+        json={
+            "email": "planner@maintcloud.local",
+            "password": "PlannerPass!2026",
+        },
+    )
+    assert login_response.status_code == 200
+
+
+def test_admin_cannot_deactivate_themselves():
+    response = client.patch(
+        f"/users/{get_user_id('admin@maintcloud.local')}/status",
+        json={"is_active": False},
+        headers=auth_headers("admin@maintcloud.local", "MaintCloudAdmin!2026"),
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Admin cannot deactivate their own account"
+
+
+def test_non_admin_cannot_manage_users():
+    viewer_headers = auth_headers("viewer@maintcloud.local", "MaintCloudViewer!2026")
+
+    create_response = client.post(
+        "/users",
+        json={
+            "email": "blocked@maintcloud.local",
+            "password": "BlockedPass!2026",
+            "role": "viewer",
+        },
+        headers=viewer_headers,
+    )
+    assert create_response.status_code == 403
+
+    role_response = client.patch(
+        f"/users/{get_user_id('admin@maintcloud.local')}/role",
+        json={"role": "technician"},
+        headers=viewer_headers,
+    )
+    assert role_response.status_code == 403
+
+    status_response = client.patch(
+        f"/users/{get_user_id('admin@maintcloud.local')}/status",
+        json={"is_active": False},
+        headers=viewer_headers,
+    )
+    assert status_response.status_code == 403

@@ -105,6 +105,27 @@ export async function getUsers() {
   return data.items;
 }
 
+export async function createUser(payload) {
+  return request("/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateUserRole(userId, payload) {
+  return request(`/users/${userId}/role`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateUserStatus(userId, payload) {
+  return request(`/users/${userId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getMachine(machineId) {
   return request(`/machines/${machineId}`);
 }

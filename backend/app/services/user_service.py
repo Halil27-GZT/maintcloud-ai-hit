@@ -42,6 +42,10 @@ def serialize_user(user: UserDB) -> UserResponse:
     )
 
 
+def get_user_by_id(db: Session, user_id: int) -> UserDB | None:
+    return db.query(UserDB).filter(UserDB.id == user_id).one_or_none()
+
+
 def get_user_by_email(db: Session, email: str) -> UserDB | None:
     normalized_email = normalize_email(email)
     return db.query(UserDB).filter(UserDB.email == normalized_email).one_or_none()
@@ -50,6 +54,50 @@ def get_user_by_email(db: Session, email: str) -> UserDB | None:
 def list_users(db: Session) -> list[UserResponse]:
     users = db.query(UserDB).order_by(UserDB.email.asc()).all()
     return [serialize_user(user) for user in users]
+
+
+def create_user(db: Session, email: str, password: str, role: UserRole) -> UserResponse:
+    normalized_email = normalize_email(email)
+    if not normalized_email:
+        raise ValueError("Email is required")
+    if len(password) < 8:
+        raise ValueError("Password must contain at least 8 characters")
+    if get_user_by_email(db, normalized_email) is not None:
+        raise ValueError("User with this email already exists")
+
+    user = UserDB(
+        email=normalized_email,
+        password_hash=hash_password(password),
+        role=role.value,
+        is_active=True,
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return serialize_user(user)
+
+
+def update_user_role(db: Session, user_id: int, role: UserRole) -> UserResponse:
+    user = get_user_by_id(db, user_id)
+    if user is None:
+        raise LookupError("User not found")
+
+    user.role = role.value
+    db.commit()
+    db.refresh(user)
+    return serialize_user(user)
+
+
+def update_user_status(db: Session, user_id: int, is_active: bool) -> UserResponse:
+    user = get_user_by_id(db, user_id)
+    if user is None:
+        raise LookupError("User not found")
+
+    user.is_active = is_active
+    db.commit()
+    db.refresh(user)
+    return serialize_user(user)
 
 
 def authenticate_user(db: Session, email: str, password: str) -> UserDB | None:
