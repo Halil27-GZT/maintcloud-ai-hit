@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "./auth";
+import { canAccessPath, getDefaultPathForRole } from "./roles";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, user } = useAuth();
   const [email, setEmail] = useState("admin@maintcloud.local");
   const [password, setPassword] = useState("MaintCloudAdmin!2026");
   const [error, setError] = useState("");
@@ -17,9 +18,13 @@ export default function LoginPage() {
       return;
     }
 
-    const redirectTarget = location.state?.from?.pathname || "/dashboard";
+    const requestedPath = location.state?.from?.pathname;
+    const redirectTarget =
+      requestedPath && canAccessPath(user?.role, requestedPath)
+        ? requestedPath
+        : getDefaultPathForRole(user?.role);
     navigate(redirectTarget, { replace: true });
-  }, [isAuthenticated, location.state, navigate]);
+  }, [isAuthenticated, location.state, navigate, user?.role]);
 
   async function handleSubmit(event) {
     event.preventDefault();

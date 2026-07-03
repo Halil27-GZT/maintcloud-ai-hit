@@ -28,6 +28,7 @@ import {
 } from "./api";
 import { useAuth } from "./auth";
 import LoginPage from "./LoginPage";
+import { getDefaultPathForRole, getNavigationItemsForRole } from "./roles";
 
 const HISTORY_WINDOW_OPTIONS = [
   { id: "3", label: "3 Werte", limit: 3 },
@@ -1798,9 +1799,16 @@ function RequireAuth() {
 
 function RoleGate({ allowedRoles }) {
   const { user } = useAuth();
+  const location = useLocation();
 
   if (!allowedRoles.includes(user?.role)) {
-    return <Navigate to="/dashboard" replace />;
+    return (
+      <Navigate
+        to={getDefaultPathForRole(user?.role)}
+        replace
+        state={{ deniedFrom: location }}
+      />
+    );
   }
 
   return <Outlet />;
@@ -1810,15 +1818,7 @@ function AppFrame() {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  const navigationItems = [
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/machines", label: "Maschinen" },
-    { to: "/sensor-data", label: "Sensordaten" },
-    { to: "/maintenance", label: "Wartung" },
-    { to: "/analysis", label: "Analyse / Trends" },
-    { to: "/system-status", label: "Systemstatus" },
-    ...(user?.role === "admin" ? [{ to: "/users", label: "Benutzer / Rollen" }] : []),
-  ];
+  const navigationItems = getNavigationItemsForRole(user?.role);
 
   const pageTitle =
     navigationItems.find((item) => location.pathname.startsWith(item.to))?.label ??
@@ -2066,14 +2066,16 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<OperationsWorkspace mode="dashboard" />} />
           <Route path="/machines" element={<OperationsWorkspace mode="machines" />} />
-          <Route
-            path="/sensor-data"
-            element={<OperationsWorkspace mode="sensor-data" />}
-          />
-          <Route
-            path="/maintenance"
-            element={<OperationsWorkspace mode="maintenance" />}
-          />
+          <Route element={<RoleGate allowedRoles={["admin", "technician"]} />}>
+            <Route
+              path="/sensor-data"
+              element={<OperationsWorkspace mode="sensor-data" />}
+            />
+            <Route
+              path="/maintenance"
+              element={<OperationsWorkspace mode="maintenance" />}
+            />
+          </Route>
           <Route path="/analysis" element={<OperationsWorkspace mode="analysis" />} />
           <Route path="/system-status" element={<SystemStatusPage />} />
           <Route element={<RoleGate allowedRoles={["admin"]} />}>
